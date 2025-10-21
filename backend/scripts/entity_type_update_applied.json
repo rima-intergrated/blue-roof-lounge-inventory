@@ -1,0 +1,65 @@
+{
+  "appliedAt": "2025-10-21T11:41:06.171Z",
+  "applied": [
+    {
+      "_id": "68f2ded2cdb4a2a3adb09ebc",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f2e02d7c32ef1f9bebc045",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f2e3637dec56d569869e0a",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f2e6b2bec6ee0f66f5ac37",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f2e72dbec6ee0f66f5ac57",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f386599dfafc8899693289",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f3939da8d656e3305d5850",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f395d3713be95eaee35497",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f3c11630ad84c16462f01a",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f3c19330ad84c16462f02d",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f68780a629d443b1229ff6",
+      "oldEntityType": "expense",
+      "newEntityType": "inventory"
+    },
+    {
+      "_id": "68f6aceeaeb6578026d63daf",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory"
+    }
+  ]
+}

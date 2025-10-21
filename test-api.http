@@ -1,0 +1,21 @@
+### Test Expense Categories API
+
+# Get all expense categories
+GET http://localhost:5000/api/expense-categories
+
+###
+
+# Create new expense category
+POST http://localhost:5000/api/expense-categories
+Content-Type: application/json
+
+{
+  "name": "Test Category",
+  "expenseId": "EXP001",
+  "description": "Test expense category"
+}
+
+###
+
+# Delete expense category (replace {id} with actual ID)
+DELETE http://localhost:5000/api/expense-categories/{id}

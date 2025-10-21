@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2025-10-21T11:41:06.026Z",
+  "updates": [
+    {
+      "_id": "68f2ded2cdb4a2a3adb09ebc",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\coo_profile-1760747218264-26971208.jpg"
+    },
+    {
+      "_id": "68f2e02d7c32ef1f9bebc045",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\coo_profile-1760747565337-668165584.jpg"
+    },
+    {
+      "_id": "68f2e3637dec56d569869e0a",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\coo_profile-1760748387529-261185737.jpg"
+    },
+    {
+      "_id": "68f2e6b2bec6ee0f66f5ac37",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\coo_profile-1760749233971-596034514.jpg"
+    },
+    {
+      "_id": "68f2e72dbec6ee0f66f5ac57",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\_OceanofPDF.com_Scarred_by_Struggle_Transformed_by_Hope_-_Joan_D_Chittister-1760749357076-593402264.pdf"
+    },
+    {
+      "_id": "68f386599dfafc8899693289",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\cfo_profile-1760790105954-735115774.jpg"
+    },
+    {
+      "_id": "68f3939da8d656e3305d5850",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\coo_profile-1760793501148-915848321.jpg"
+    },
+    {
+      "_id": "68f395d3713be95eaee35497",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\ceo_profile-1760794067572-648921763.jpg"
+    },
+    {
+      "_id": "68f3c11630ad84c16462f01a",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\Receipt-1760805142068-577577548.jpg"
+    },
+    {
+      "_id": "68f3c19330ad84c16462f02d",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\cfo_profile-1760805267410-479632800.jpg"
+    },
+    {
+      "_id": "68f68780a629d443b1229ff6",
+      "oldEntityType": "expense",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\cfo_profile-1760987008925-177342086.jpg"
+    },
+    {
+      "_id": "68f6aceeaeb6578026d63daf",
+      "oldEntityType": "stock",
+      "newEntityType": "inventory",
+      "filePath": "uploads\\inventory\\coo_profile-1760996590472-928028232.jpg"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# MongoDB Shell Commands to Find Your User
+
+# Connect to MongoDB shell
+mongosh
+
+# Switch to your database
+use blue_roof_lounge
+
+# Find all users
+db.users.find()
+
+# Find your specific user by ID
+db.users.findOne({_id: ObjectId("68d5f2d944814a5b930796ae")})
+
+# Find user by username
+db.users.findOne({username: "manager_jane"})
+
+# Find user by email
+db.users.findOne({email: "jane@bluerooflounge.com"})
+
+# Count total users
+db.users.countDocuments()
+
+# Show all collections in database
+show collections
+
+# Show database stats
+db.stats()
+
+# Exit MongoDB shell
+exit

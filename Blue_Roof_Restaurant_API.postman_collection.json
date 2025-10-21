@@ -1,0 +1,344 @@
+{
+  "info": {
+    "name": "Blue Roof Restaurant Management API",
+    "description": "Complete API testing collection for Blue Roof Restaurant Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register Admin User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@blueroof.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('token', response.data.token);",
+                  "    pm.environment.set('userId', response.data.user.id);",
+                  "    console.log('Token saved:', response.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@blueroof.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Inventory Management",
+      "item": [
+        {
+          "name": "Create Inventory Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('inventoryId', response.data.item._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemName\": \"Grilled Chicken Breast\",\n  \"itemId\": \"FC001\",\n  \"category\": \"Food\",\n  \"brand\": \"Fresh Foods\",\n  \"description\": \"Premium grilled chicken breast\",\n  \"unitOfMeasure\": \"Piece\",\n  \"costPrice\": 18.50,\n  \"sellingPrice\": 25.99,\n  \"currentStock\": 50,\n  \"minimumStock\": 10,\n  \"maximumStock\": 100,\n  \"reorderLevel\": 15,\n  \"location\": \"Main Kitchen Freezer\",\n  \"expiryDate\": \"2024-12-31\",\n  \"taxRate\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory"]
+            }
+          }
+        },
+        {
+          "name": "Get All Inventory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory"]
+            }
+          }
+        },
+        {
+          "name": "Get Inventory Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Staff & Payroll Management",
+      "item": [
+        {
+          "name": "Create Staff Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('staffId', response.data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith\",\n  \"gender\": \"Male\",\n  \"contact\": \"+1234567890\",\n  \"email\": \"john.smith@blueroof.com\",\n  \"position\": \"Chef\",\n  \"address\": \"123 Main Street\",\n  \"salary\": 3000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "staff"]
+            }
+          }
+        },
+        {
+          "name": "Create Payroll Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee\": \"{{staffId}}\",\n  \"payPeriod\": {\n    \"startDate\": \"2024-12-01\",\n    \"endDate\": \"2024-12-31\"\n  },\n  \"basicSalary\": 3000,\n  \"workingDays\": {\n    \"expected\": 22,\n    \"actual\": 20\n  },\n  \"allowances\": {\n    \"transport\": 200,\n    \"housing\": 300,\n    \"meal\": 150,\n    \"overtime\": 250,\n    \"bonus\": 500\n  },\n  \"deductions\": {\n    \"tax\": 300,\n    \"nhif\": 150,\n    \"nssf\": 200,\n    \"loan\": 100\n  },\n  \"paymentMethod\": \"Bank Transfer\",\n  \"paymentStatus\": \"Pending\",\n  \"processedBy\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll"]
+            }
+          }
+        },
+        {
+          "name": "Get All Payroll Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Supplier Management",
+      "item": [
+        {
+          "name": "Create Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('supplierId', response.data._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierName\": \"Fresh Foods Limited\",\n  \"supplierId\": \"SUP001\",\n  \"contactPerson\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"position\": \"Sales Manager\"\n  },\n  \"contactInformation\": {\n    \"phoneNumber\": \"+1-555-0123\",\n    \"email\": \"john.smith@freshfoods.com\"\n  },\n  \"address\": {\n    \"street\": \"123 Business Ave\",\n    \"city\": \"Business City\",\n    \"state\": \"BC\",\n    \"postalCode\": \"12345\",\n    \"country\": \"USA\"\n  },\n  \"businessDetails\": {\n    \"registrationNumber\": \"REG123456\",\n    \"taxNumber\": \"TAX789012\"\n  },\n  \"paymentTerms\": {\n    \"creditDays\": 30,\n    \"discountPercentage\": 5\n  },\n  \"addedBy\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers"]
+            }
+          }
+        },
+        {
+          "name": "Get All Suppliers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 System Health",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
