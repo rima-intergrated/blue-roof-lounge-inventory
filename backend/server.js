@@ -7,16 +7,6 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Debugging: log OPTIONS requests early to help diagnose preflight 500 errors
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    console.log('--- Preflight OPTIONS request received ---');
-    console.log('URL:', req.originalUrl);
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  }
-  next();
-});
-
 // Middleware
 // Trust proxy so secure cookies and req.secure work behind Render's proxy
 app.set('trust proxy', 1);
@@ -38,6 +28,8 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 };
+
+// (Removed temporary OPTIONS debug logging)
 
 // Manual preflight handler placed before the cors middleware to ensure
 // we always respond to OPTIONS (preflight) requests and set the
@@ -97,17 +89,12 @@ app.use('/api', require('./src/routes'));
 const { connectDB } = require('./src/config/database');
 connectDB();
 
-// Global error handler
+// Global error handler (production-safe)
 app.use((err, req, res, next) => {
-  console.error('Global error handler caught:', err);
-  // Temporarily return detailed error information for debugging preflight 500s.
-  // IMPORTANT: revert this change after debugging.
+  console.error(err.stack);
   res.status(500).json({ 
     message: 'Something went wrong!',
-    error: {
-      message: err.message,
-      stack: err.stack
-    }
+    error: process.env.NODE_ENV === 'production' ? {} : err.message 
   });
 });
 
