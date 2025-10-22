@@ -7,6 +7,17 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Validate required environment variables early so we fail fast with
+// a clear message instead of an obscure JWT error at runtime.
+const requiredEnvs = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'SESSION_SECRET'];
+const missing = requiredEnvs.filter((k) => !process.env[k]);
+if (missing.length) {
+  console.error('Missing required environment variables:', missing.join(', '));
+  console.error('Please set these in your Render environment (or .env for local development) and restart the service.');
+  // Exit with non-zero so the process manager knows something is wrong
+  process.exit(1);
+}
+
 // Middleware
 // Trust proxy so secure cookies and req.secure work behind Render's proxy
 app.set('trust proxy', 1);
