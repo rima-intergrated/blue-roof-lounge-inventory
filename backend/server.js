@@ -7,6 +7,16 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Debugging: log OPTIONS requests early to help diagnose preflight 500 errors
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    console.log('--- Preflight OPTIONS request received ---');
+    console.log('URL:', req.originalUrl);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  }
+  next();
+});
+
 // Middleware
 // Trust proxy so secure cookies and req.secure work behind Render's proxy
 app.set('trust proxy', 1);
@@ -16,30 +26,47 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
+  // Add a helpful default for the Vercel frontend; please set FRONTEND_URL in Render to override/confirm
+  'https://blue-roof-lounge-inventory-system.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS policy: Origin not allowed'), false);
-    }
-  },
+  // Use the allowedOrigins array directly so the cors middleware handles checks cleanly
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 };
 
+// Manual preflight handler placed before the cors middleware to ensure
+// we always respond to OPTIONS (preflight) requests and set the
+// Access-Control-Allow-* headers. This avoids cases where other middleware
+// can cause a 500 during preflight handling.
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    const origin = req.get('origin');
+    // Allow if no origin (server-to-server) or origin is explicitly allowed
+    if (!origin || allowedOrigins.includes(origin)) {
+      if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,X-Requested-With');
+      return res.status(204).end();
+    }
+    return res.status(403).json({ message: 'CORS origin not allowed' });
+  }
+  next();
+});
+
 app.use(cors(corsOptions));
-// Handle preflight requests for all routes
+// Keep the cors preflight handler as a fallback
 app.options('*', cors(corsOptions));
 
 // Custom middleware to conditionally apply JSON parsing
 app.use((req, res, next) => {
+  // Immediately skip body parsing for preflight requests
+  if (req.method === 'OPTIONS') return next();
   const contentType = req.get('content-type') || '';
   const isMultipart = contentType.includes('multipart/form-data');
   const isCreditSalesPost = req.url === '/api/credit-sales' && req.method === 'POST';
@@ -72,10 +99,15 @@ connectDB();
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Global error handler caught:', err);
+  // Temporarily return detailed error information for debugging preflight 500s.
+  // IMPORTANT: revert this change after debugging.
   res.status(500).json({ 
     message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'production' ? {} : err.message 
+    error: {
+      message: err.message,
+      stack: err.stack
+    }
   });
 });
 
