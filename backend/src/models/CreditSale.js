@@ -4,7 +4,6 @@ const creditSaleSchema = new mongoose.Schema({
   transactionId: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   itemName: {
@@ -102,6 +101,7 @@ creditSaleSchema.virtual('formattedDatePaid').get(function() {
 });
 
 // Index for better query performance
+// Indexes for performance (defined here exclusively)
 creditSaleSchema.index({ transactionId: 1 });
 creditSaleSchema.index({ itemId: 1 });
 creditSaleSchema.index({ customerName: 1 });

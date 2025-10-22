@@ -156,8 +156,7 @@ const payrollSchema = new mongoose.Schema({
     type: Date
   },
   payrollReference: {
-    type: String,
-    unique: true
+    type: String
   },
   notes: {
     type: String,
@@ -293,6 +292,7 @@ payrollSchema.index({ employee: 1 });
 payrollSchema.index({ 'payPeriod.startDate': -1, 'payPeriod.endDate': -1 });
 payrollSchema.index({ paymentStatus: 1 });
 payrollSchema.index({ paymentType: 1 });
+// payrollReference index declared once
 payrollSchema.index({ payrollReference: 1 });
 payrollSchema.index({ processedBy: 1 });
 payrollSchema.index({ createdAt: -1 });
