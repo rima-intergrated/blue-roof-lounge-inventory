@@ -4,14 +4,20 @@ const nodemailer = require('nodemailer');
 class NotificationService {
   constructor() {
     // Gmail SMTP configuration
+    // Prefer explicit environment variables. Support either GMAIL_* or generic EMAIL_* names.
     this.gmailConfig = {
-      user: process.env.GMAIL_USER || 'your-gmail@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
+      user: process.env.GMAIL_USER || process.env.EMAIL_USER || null,
+      pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || null
     };
-    
-    // Create nodemailer transporter for Gmail
+
+    // Create nodemailer transporter for Gmail (lazy or conditional init)
     this.transporter = null;
-    this.initializeTransporter();
+    // Initialize transporter only when email notifications are explicitly enabled
+    if ((process.env.ENABLE_EMAIL_NOTIFICATIONS || 'false').toLowerCase() === 'true') {
+      this.initializeTransporter();
+    } else {
+      console.log('ℹ️ Email notifications are disabled. SMTP transporter not initialized.');
+    }
   }
 
   /**
@@ -19,6 +25,11 @@ class NotificationService {
    */
   initializeTransporter() {
     try {
+      if (!this.gmailConfig.user || !this.gmailConfig.pass) {
+        console.log('⚠️ Gmail credentials are missing; transporter will not be created.');
+        return;
+      }
+
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -29,9 +40,9 @@ class NotificationService {
           rejectUnauthorized: false
         }
       });
-      
+
       // Verify connection
-      this.transporter.verify((error, success) => {
+      this.transporter.verify((error) => {
         if (error) {
           console.log('📧 Gmail SMTP configuration error:', error.message);
           console.log('💡 Please check your Gmail credentials in environment variables');
@@ -74,7 +85,7 @@ class NotificationService {
     console.log('='.repeat(50));
     
     // Check if Gmail is configured
-    if (!this.transporter || this.gmailConfig.user === 'your-gmail@gmail.com') {
+    if (!this.transporter || !this.gmailConfig.user || !this.gmailConfig.pass) {
       console.log('⚠️ Gmail SMTP not configured. Using console logging only.');
       console.log('💡 To enable Gmail SMTP:');
       console.log('   1. Set GMAIL_USER environment variable');

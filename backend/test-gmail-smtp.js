@@ -27,12 +27,12 @@ async function testConnection() {
     const info = await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.GMAIL_USER, // Send to yourself for testing
-      subject: 'Blue Roof Restaurant - Gmail SMTP Test',
+      subject: 'Blue Roof Lounge - Gmail SMTP Test',
       html: `
         <h2>Gmail SMTP Test Successful!</h2>
         <p>This email confirms that your Gmail SMTP configuration is working correctly.</p>
         <p>Date: ${new Date().toLocaleString()}</p>
-        <p>From: Blue Roof Restaurant API</p>
+        <p>From: Blue Roof Lounge API</p>
       `
     });
     
