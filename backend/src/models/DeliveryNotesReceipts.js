@@ -14,7 +14,7 @@ const deliveryNotesReceiptsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Stock',
     required: true,
-    index: true
+    // index declared later via deliveryNotesReceiptsSchema.index(...)
   },
   
   // Basic stock item information for quick reference
@@ -34,7 +34,7 @@ const deliveryNotesReceiptsSchema = new mongoose.Schema({
   transactionId: {
     type: String,
     required: true,
-    index: true,
+    // index declared later via deliveryNotesReceiptsSchema.index(...)
     trim: true
   },
   

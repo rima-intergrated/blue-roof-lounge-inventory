@@ -68,10 +68,11 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
+// Listen on the environment-provided port and on all interfaces so cloud hosts (Render, etc.)
+// can bind the service. Do not hardcode 127.0.0.1 which prevents external access.
 const server = app.listen(PORT, () => {
   console.log(`🚀 Blue Roof Lounge API Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Server listening on port ${PORT}`);
 });
 
 server.on('error', (err) => {

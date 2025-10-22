@@ -49,7 +49,7 @@ const attachmentSchema = new mongoose.Schema({
   transactionId: {
     type: String,
     required: true,
-    index: true
+    // index is declared later via attachmentSchema.index({ createdAt: -1 }) and others
   },
   // Who uploaded it
   uploadedBy: {
