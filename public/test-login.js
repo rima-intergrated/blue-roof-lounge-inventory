@@ -2,8 +2,12 @@
 const testFrontendLogin = async () => {
   try {
     console.log('🧪 Testing frontend login integration...');
-    
-    const response = await fetch('/api/auth/login', {
+    // Use an explicit API base so this test works when the static frontend
+    // is served from a different origin (Vercel). Prefer a window override
+    // for local quick tests: set window.__API_BASE__ in the console.
+    const API_BASE = window.__API_BASE__ || 'https://blue-roof-lounge-backend.onrender.com/api';
+
+    const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
