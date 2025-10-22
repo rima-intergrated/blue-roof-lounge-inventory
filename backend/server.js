@@ -68,10 +68,10 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-const server = app.listen(PORT, '127.0.0.1', () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Blue Roof Lounge API Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Server listening on http://127.0.0.1:${PORT}`);
+  console.log(`🌐 Server listening on port ${PORT}`);
 });
 
 server.on('error', (err) => {
