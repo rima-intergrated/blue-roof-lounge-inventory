@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { authAPI } from './services/api';
+import { authAPI, API_BASE_URL } from './services/api';
 import './PasswordSetup.css';
 
 function PasswordSetup() {
@@ -122,7 +122,7 @@ function PasswordSetup() {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/password-setup/resend', {
+      const response = await fetch(`${API_BASE_URL}/password-setup/resend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,12 +1,12 @@
 // Helper to fetch an attachment (with auth) and return an object URL for preview
+import { API_BASE_URL } from '../services/api';
+
 export async function fetchAttachmentPreview(attachment) {
   const att = attachment || {};
   const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('authToken') : null;
-  const backendBase = (typeof window !== 'undefined' && window.location) ? `${window.location.protocol}//${window.location.hostname}:5000` : '';
-  // Prefer explicit att.url when provided, but if it's a relative path (starts with '/') we must
-  // resolve it against the backend origin so the browser doesn't request it from the dev server.
-  // Prefer an explicit downloadUrl from the server (absolute API endpoint) when present
-  let downloadUrl = att.downloadUrl || att.url || (backendBase + `/api/attachments/download/${att._id}`);
+  const backendBase = API_BASE_URL || ((typeof window !== 'undefined' && window.location) ? `${window.location.protocol}//${window.location.hostname}:5000` : '');
+  // Prefer explicit att.downloadUrl or att.url when provided; otherwise build absolute API download URL
+  let downloadUrl = att.downloadUrl || att.url || (backendBase ? `${backendBase}/attachments/download/${att._id}` : `/attachments/download/${att._id}`);
   if (downloadUrl && typeof downloadUrl === 'string') {
     // If downloadUrl is a relative path like '/uploads/...', prefix backendBase
     const isAbsolute = /^https?:\/\//i.test(downloadUrl);

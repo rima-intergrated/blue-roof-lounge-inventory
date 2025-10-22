@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { expenseCategoryAPI } from './services/api';
+import { expenseCategoryAPI, API_BASE_URL } from './services/api';
 
 function MyProfile(props) {
   const token = props.token;
@@ -110,7 +110,7 @@ function MyProfile(props) {
   
   useEffect(() => {
     if (viewMode === 'view-items' || viewMode === 'create-item') {
-      axios.get('http://127.0.0.1:5000/api/stock', {
+      axios.get(`${API_BASE_URL}/stock`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
@@ -177,7 +177,7 @@ function MyProfile(props) {
       projectedProfit: 0
     };
     // Persist to backend (save to 'stock' collection)
-    axios.post("http://127.0.0.1:5000/api/stock", newDrink, {
+    axios.post(`${API_BASE_URL}/stock`, newDrink, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
@@ -188,7 +188,7 @@ function MyProfile(props) {
       setDrinkId("");
       alert("Item added and persisted to stock database.");
       // Refresh backend items (assume /api/stock returns items)
-      axios.get('http://127.0.0.1:5000/api/stock', {
+      axios.get(`${API_BASE_URL}/stock`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => setBackendItems(res.data.data.items || []));
     })
@@ -329,7 +329,7 @@ function MyProfile(props) {
   function confirmDelete() {
     if (deleteType === 'drink' && itemToDelete) {
       // Delete from backend using the correct item ID
-      axios.delete(`http://127.0.0.1:5000/api/stock/${itemToDelete.itemId}`, {
+      axios.delete(`${API_BASE_URL}/stock/${itemToDelete.itemId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -338,7 +338,7 @@ function MyProfile(props) {
       .then(() => {
         alert('Item deleted from stock database. ID is now available for new assignment.');
         // Refresh backend items list
-        return axios.get('http://127.0.0.1:5000/api/stock', {
+          return axios.get(`${API_BASE_URL}/stock`, {
           headers: { Authorization: `Bearer ${token}` }
         });
       })

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from './services/api';
 import { useNavigate } from "react-router-dom";
 import formatCurrency from './utils/formatCurrency';
 import { payrollAPI } from './services/api';
@@ -212,7 +213,7 @@ function ReportsAnalytics (props) {
       try {
         const token = localStorage.getItem('authToken');
         // Accept supplierId that might be an object id string
-        const resp = await fetch(`/api/suppliers/${encodeURIComponent(supplierId)}`, {
+  const resp = await fetch(`${API_BASE_URL}/suppliers/${encodeURIComponent(supplierId)}`, {
           method: 'DELETE',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
@@ -257,7 +258,7 @@ function ReportsAnalytics (props) {
     setLowStockError('');
     try {
       const token = localStorage.getItem('authToken');
-      const resp = await fetch('/api/stock/alerts/low-stock', {
+  const resp = await fetch(`${API_BASE_URL}/stock/alerts/low-stock`, {
         headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
       });
       if (!resp.ok) {
@@ -268,7 +269,7 @@ function ReportsAnalytics (props) {
         // If alerts endpoint not found, attempt fallback to /api/stock
         if (resp.status === 404) {
           try {
-            const fallback = await fetch('/api/stock?page=1&limit=1000', {
+            const fallback = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
               headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
             });
             if (fallback.ok) {
@@ -317,7 +318,7 @@ function ReportsAnalytics (props) {
     try {
       const token = localStorage.getItem('authToken');
       const body = { quantity: qty, action: 'add', costPrice: item.costPrice || item.cost_price || 0, sellingPrice: item.sellingPrice || item.selling_price || 0 };
-      const resp = await fetch(`/api/stock/${encodeURIComponent(item._id)}/stock`, {
+  const resp = await fetch(`${API_BASE_URL}/stock/${encodeURIComponent(item._id)}/stock`, {
         method: 'PATCH',
         headers: token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from './services/api';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from './context/AuthContext';
 import usePermissions from './hooks/usePermissions';
@@ -165,7 +166,7 @@ function useInitialSuppliers(setSuppliers) {
     async function loadSuppliers() {
       try {
         const token = localStorage.getItem('authToken');
-        const resp = await fetch('/api/suppliers?page=1&limit=1000', {
+        const resp = await fetch(`${API_BASE_URL}/suppliers?page=1&limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!resp.ok) return;
@@ -191,7 +192,7 @@ function useInitialCreditSales(setCreditRecords, setPaidCreditRecords) {
     async function loadCreditSales() {
       try {
         const token = localStorage.getItem('authToken');
-        const resp = await fetch('/api/credit-sales?limit=1000', {
+        const resp = await fetch(`${API_BASE_URL}/credit-sales?limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!resp.ok) return;

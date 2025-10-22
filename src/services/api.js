@@ -14,6 +14,8 @@ const normalizeApiBase = (raw) => {
 };
 
 const API_BASE_URL = normalizeApiBase(_rawApiBase);
+// Export the normalized base for other modules that build full URLs directly
+export { API_BASE_URL };
 
 // API utility functions
 const apiRequest = async (endpoint, options = {}) => {

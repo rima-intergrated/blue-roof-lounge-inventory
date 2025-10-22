@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars, no-empty */
 import { useState, useEffect, useRef } from "react";
-import { attachmentAPI, stockAPI, categoryAPI, expenseAPI, expenseCategoryAPI, salesAPI, creditSalesAPI, staffAPI } from "../../services/api";
+import { attachmentAPI, stockAPI, categoryAPI, expenseAPI, expenseCategoryAPI, salesAPI, creditSalesAPI, staffAPI, API_BASE_URL } from "../../services/api";
 import formatCurrency from '../../utils/formatCurrency';
 
 function PosTransaction (props) {
@@ -20,7 +20,7 @@ function PosTransaction (props) {
       normalizedPath = null;
     }
 
-    const backendBase = (typeof window !== 'undefined' && window.location) ? `${window.location.protocol}//${window.location.hostname}:5000` : '';
+  const backendBase = API_BASE_URL || ((typeof window !== 'undefined' && window.location) ? `${window.location.protocol}//${window.location.hostname}:5000` : '');
 
     // If server provided a relative static file URL (fileUrl), build an absolute URL for preview
     let absoluteStaticUrl = null;
@@ -308,7 +308,7 @@ function PosTransaction (props) {
       try {
         setStockError('');
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/stock?page=1&limit=1000', {
+        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {
@@ -1541,7 +1541,7 @@ function PosTransaction (props) {
           try {
             targetUrl = attachmentAPI.getUrl(currentAttachment._id);
           } catch(e) {
-            targetUrl = (backendBase ? backendBase : '') + `/api/attachments/download/${currentAttachment._id}`;
+            targetUrl = (backendBase ? backendBase : '') + `/attachments/download/${currentAttachment._id}`;
           }
         }
 
@@ -2568,7 +2568,7 @@ function PosTransaction (props) {
                                       } else {
                                         // Blob failed basic validation - try to fetch an authenticated preview for the modal
                                         {
-                                          const downloadApiUrl = att.url || (att._id ? `/api/attachments/download/${att._id}` : null);
+                                          const downloadApiUrl = att.url || (att._id ? `/attachments/download/${att._id}` : null);
                                           let previewSet = false;
                                           if (downloadApiUrl) {
                                             try {
@@ -2641,7 +2641,7 @@ function PosTransaction (props) {
                                       } else {
                                         // Fallback to modal — attempt authenticated preview first
                                         {
-                                          const downloadApiUrl = att.url || (att._id ? `/api/attachments/download/${att._id}` : null);
+                                          const downloadApiUrl = att.url || (att._id ? `/attachments/download/${att._id}` : null);
                                           let previewSet = false;
                                           if (downloadApiUrl) {
                                             try {
@@ -2682,7 +2682,7 @@ function PosTransaction (props) {
                                   } else {
                                     // Fallback: show modal with download link (safe) — try authenticated preview first
                                     {
-                                      const downloadApiUrl = att.url || (att._id ? `/api/attachments/download/${att._id}` : null);
+                                      const downloadApiUrl = att.url || (att._id ? `/attachments/download/${att._id}` : null);
                                       let previewSet = false;
                                       if (downloadApiUrl) {
                                         try {

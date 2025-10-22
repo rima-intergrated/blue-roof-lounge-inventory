@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from './services/api';
 import formatCurrency from "./utils/formatCurrency";
 import { useLocation } from 'react-router-dom';
 function NewOrder (props) {
@@ -8,7 +9,7 @@ function NewOrder (props) {
     async function fetchAllStocks() {
       try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/stock?page=1&limit=1000', {
+        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) return;
@@ -46,7 +47,7 @@ function NewOrder (props) {
   const token = localStorage.getItem('authToken');
         console.log('[DEBUG] Token used for /api/stock:', token);
         setStockError("");
-        const response = await fetch("/api/stock?page=1&limit=1000", {
+        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {
@@ -214,7 +215,7 @@ function NewOrder (props) {
       try {
         const token = localStorage.getItem('authToken');
         // Fetch many attachments related to stock; server supports filtering
-        const resp = await fetch('/api/attachments?entityType=stock&limit=1000', {
+        const resp = await fetch(`${API_BASE_URL}/attachments?entityType=stock&limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!resp.ok) {
@@ -225,8 +226,8 @@ function NewOrder (props) {
         // Normalize attachments to include a download/view URL
         // build absolute backend URL for downloads to avoid dev-server proxy issues
   // Always point to backend on port 5000 for downloads in dev
-  const backendOrigin = (window && window.location) ? `${window.location.protocol}//${window.location.hostname}:5000` : '';
-        const normalized = atts.map(a => ({
+  const backendOrigin = API_BASE_URL || ((window && window.location) ? `${window.location.protocol}//${window.location.hostname}:5000` : '');
+    const normalized = atts.map(a => ({
           _id: a._id,
           entityId: a.entityId || null,
           name: a.originalName || a.fileName || 'Attachment',
@@ -234,7 +235,7 @@ function NewOrder (props) {
           size: a.fileSize || a.size || 0,
           dateOrdered: a.createdAt || a.uploadedAt || a.updatedAt,
           itemName: a.itemName || null,
-          url: (backendOrigin ? `${backendOrigin}` : '') + `/api/attachments/download/${a._id}`,
+          url: (backendOrigin ? `${backendOrigin}` : '') + `/attachments/download/${a._id}`,
           transactionId: a.transactionId || null
         }));
         setDeliveryAttachments(normalized);
@@ -355,7 +356,7 @@ function NewOrder (props) {
       } catch (e) {
         // Fallback to previous behavior if helper import fails
         const att = { ...attachment };
-        if (!att.url && att._id) att.url = `/api/attachments/download/${att._id}`;
+        if (!att.url && att._id) att.url = `${API_BASE_URL}/attachments/download/${att._id}`;
         setCurrentAttachment(att);
         setShowAttachmentModal(true);
       }
@@ -474,9 +475,9 @@ function NewOrder (props) {
       try {
         let url;
         if (itemId) {
-          url = `/api/stock?itemId=${encodeURIComponent(itemId)}`;
+          url = `${API_BASE_URL}/stock?itemId=${encodeURIComponent(itemId)}`;
         } else if (itemName) {
-          url = `/api/stock?itemName=${encodeURIComponent(itemName)}`;
+          url = `${API_BASE_URL}/stock?itemName=${encodeURIComponent(itemName)}`;
         } else {
           return null;
         }
@@ -512,7 +513,7 @@ function NewOrder (props) {
           console.error('No _id found for stockData, cannot update:', stockData);
           return false;
         }
-        const url = `/api/stock/byid/${encodeURIComponent(stockData._id)}`;
+  const url = `${API_BASE_URL}/stock/byid/${encodeURIComponent(stockData._id)}`;
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
@@ -541,7 +542,7 @@ function NewOrder (props) {
       // Ensure supplier saved separately if supplierName provided and not the default label
       if (orderedItem.supplierName && orderedItem.supplierName.trim() !== '' && orderedItem.supplierName !== 'Direct Purchase') {
         try {
-          const resp = await fetch('/api/suppliers/simple', {
+          const resp = await fetch(`${API_BASE_URL}/suppliers/simple`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -584,7 +585,7 @@ function NewOrder (props) {
           // entityId unknown until put; backend allows post then link later via attachment update
           form.append('entityId', '');
           form.append('transactionId', transactionId);
-          const attResp = await fetch('/api/attachments', {
+          const attResp = await fetch(`${API_BASE_URL}/attachments`, {
             method: 'POST',
             headers: {
               ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -664,7 +665,7 @@ function NewOrder (props) {
     async function fetchAllStocksAfterSave() {
       try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/stock?page=1&limit=1000', {
+        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) return;
@@ -1347,7 +1348,7 @@ function NewOrder (props) {
                                       }
                                     } catch (e) {
                                       // As an absolute last resort, open the unauthenticated download endpoint
-                                      window.open(`/api/attachments/download/${doc._id}`, '_blank');
+                                      window.open(`${API_BASE_URL}/attachments/download/${doc._id}`, '_blank');
                                     }
                                   }
                                 } catch (e) {
@@ -1379,7 +1380,7 @@ function NewOrder (props) {
                                 if (!confirm('Delete this attachment? This will remove the file from the server.')) return;
                                 try {
                                   const token = localStorage.getItem('authToken');
-                                  const resp = await fetch(`/api/attachments/${encodeURIComponent(doc._id)}`, {
+                                  const resp = await fetch(`${API_BASE_URL}/attachments/${encodeURIComponent(doc._id)}`, {
                                     method: 'DELETE',
                                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                   });
@@ -1594,7 +1595,7 @@ function NewOrder (props) {
                       if (!confirm('Delete this attachment?')) return;
                       try {
                         const token = localStorage.getItem('authToken');
-                        const resp = await fetch(`/api/attachments/${encodeURIComponent(currentAttachment._id)}`, {
+                        const resp = await fetch(`${API_BASE_URL}/attachments/${encodeURIComponent(currentAttachment._id)}`, {
                           method: 'DELETE',
                           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                         });
@@ -1693,7 +1694,7 @@ function NewOrder (props) {
                       if (!confirm('Delete this attachment?')) return;
                       try {
                         const token = localStorage.getItem('authToken');
-                        const resp = await fetch(`/api/attachments/${encodeURIComponent(currentAttachment._id)}`, {
+                        const resp = await fetch(`${API_BASE_URL}/attachments/${encodeURIComponent(currentAttachment._id)}`, {
                           method: 'DELETE',
                           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                         });
