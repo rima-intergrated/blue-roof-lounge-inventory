@@ -86,7 +86,8 @@ const expenseSchema = new mongoose.Schema({
 expenseSchema.index({ expenseDate: -1 });
 expenseSchema.index({ category: 1 });
 expenseSchema.index({ recordedBy: 1 });
-expenseSchema.index({ transactionId: 1 });
+// transactionId is declared `unique: true` on the field; single-field index
+// removed to avoid duplicate-index warnings.
 
 // Pre-validate middleware to generate transaction ID so it's available during validation
 expenseSchema.pre('validate', function(next) {

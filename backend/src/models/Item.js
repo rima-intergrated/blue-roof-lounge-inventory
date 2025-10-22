@@ -45,7 +45,8 @@ const itemSchema = new mongoose.Schema({
 
 // Indexes for better performance
 itemSchema.index({ name: 1, type: 1 });
-itemSchema.index({ itemId: 1 });
+// itemId is declared `unique: true` on the field; single-field index removed
+// to prevent duplicate index warnings from Mongoose.
 itemSchema.index({ type: 1, isActive: 1 });
 itemSchema.index({ createdBy: 1 });
 

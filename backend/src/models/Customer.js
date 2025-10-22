@@ -11,6 +11,7 @@ const customerSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-customerSchema.index({ mobile: 1 });
+// mobile is declared `unique: true` on the field so a single-field index
+// declaration here would duplicate it; removed to silence Mongoose warnings.
 
 module.exports = mongoose.model('Customer', customerSchema);

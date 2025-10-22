@@ -124,6 +124,8 @@ saleSchema.index({ dateSold: -1 });
 saleSchema.index({ paymentMode: 1 });
 saleSchema.index({ isPaid: 1 });
 saleSchema.index({ cashier: 1 });
-saleSchema.index({ transactionId: 1 });
+// transactionId is declared `unique: true` on the field; the single-field index
+// below was removed to avoid duplicate-index warnings. Keep composite/other
+// indexes defined via schema.index(...) where needed.
 
 module.exports = mongoose.model('Sale', saleSchema);

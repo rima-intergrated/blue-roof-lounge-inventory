@@ -1,5 +1,10 @@
 const mongoose = require('mongoose');
 
+// Disable automatic index builds in production to avoid performance issues
+// and duplicate-index warnings being built at runtime. Use migrations or
+// DB admin tools to manage indexes in production.
+mongoose.set('autoIndex', false);
+
 const connectDB = async () => {
   try {
     console.log('🔄 Connecting to MongoDB...');
