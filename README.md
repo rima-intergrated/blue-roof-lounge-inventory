@@ -30,7 +30,7 @@ git push -u origin main
 
 Notes:
 - Do NOT commit secret files like `.env` — they are listed in `.gitignore`.
-- If your repository is large because of `uploads/`, consider moving uploads to external object storage (S3, DigitalOcean Spaces) and add `uploads/` to `.gitignore` before pushing..
+- If your repository is large because of `uploads/`, consider moving uploads to external object storage (S3, DigitalOcean Spaces) and add `uploads/` to `.gitignore` before pushing.
 
 ## Deploying Frontend (Vercel)
 
