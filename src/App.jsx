@@ -115,7 +115,7 @@ const AppLayout = () => {
           <PermissionGuard module="settings">
             <div className="page-transition">
               <MyProfile token={localStorage.getItem('authToken')} user={user} onLogout={handleLogout} />
-      <Route path="/" element={<Navigate to="/login" replace />} />
+            </div>
           </PermissionGuard>
         } />
         <Route path="/inventory" element={
