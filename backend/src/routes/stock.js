@@ -6,6 +6,15 @@ const Stock = require('../models/Stock');
 const stockController = require('../controllers/stockController'); // renamed controller uses Stock model
 const { auth } = require('../middleware/auth');
 
+// Diagnostic middleware to log stock route requests (helps debug 404s)
+router.use((req, res, next) => {
+	console.log(`[STOCK ROUTE] ${req.method} ${req.originalUrl}`);
+	next();
+});
+
+// Test endpoint to verify route mounting
+router.get('/test', (req, res) => res.json({ success: true, message: 'stock route reachable' }));
+
 // Update stock item by itemId
 router.put('/:itemId', auth, stockController.updateStockItemByItemId);
 // Update stock item by MongoDB _id
