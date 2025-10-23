@@ -1,20 +1,6 @@
 // API Base Configuration
-// Normalize VITE_API_URL so it never has a trailing slash and always ends with '/api'.
-// This makes joining endpoints with leading slashes safe (API_BASE_URL + endpoint).
-const _rawApiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const normalizeApiBase = (raw) => {
-  if (!raw) return raw;
-  // remove trailing slashes
-  let base = raw.replace(/\/+$/, '');
-  // ensure it ends with '/api'
-  if (!base.endsWith('/api')) {
-    base = base + '/api';
-  }
-  return base;
-};
-
-const API_BASE_URL = normalizeApiBase(_rawApiBase);
-// Export the normalized base for other modules that build full URLs directly
+// Use VITE_API_URL as-is, no forced '/api' suffix
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export { API_BASE_URL };
 
 // API utility functions
