@@ -7,13 +7,18 @@ const stockController = require('../controllers/stockController'); // renamed co
 const { auth } = require('../middleware/auth');
 
 // Diagnostic middleware to log stock route requests (helps debug 404s)
+
+// Diagnostic middleware to log incoming requests with timestamp
 router.use((req, res, next) => {
-	console.log(`[STOCK ROUTE] ${req.method} ${req.originalUrl}`);
+	console.log(`[STOCK ROUTE] ${req.method} ${req.originalUrl} at ${new Date().toISOString()}`);
 	next();
 });
 
 // Test endpoint to verify route mounting
-router.get('/test', (req, res) => res.json({ success: true, message: 'stock route reachable' }));
+// Improved /test endpoint for diagnostics
+router.get('/test', (req, res) => {
+	res.json({ status: 'ok', message: 'Stock route /test reached', timestamp: new Date().toISOString() });
+});
 
 // Update stock item by itemId
 router.put('/:itemId', auth, stockController.updateStockItemByItemId);
