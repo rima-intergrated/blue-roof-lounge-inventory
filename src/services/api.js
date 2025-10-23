@@ -45,18 +45,29 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    
+
+    // Check for HTTP error status
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const contentType = response.headers.get('content-type');
+      let errorText = '';
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json().catch(() => ({}));
+        errorText = errorData.message || JSON.stringify(errorData);
+      } else {
+        errorText = await response.text();
+      }
+      throw new Error(`HTTP error ${response.status}: ${errorText}`);
     }
 
+    // Check for valid JSON response
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
+    } else {
+      // Not JSON, return text for debugging
+      const text = await response.text();
+      throw new Error(`Expected JSON, got: ${text}`);
     }
-    
-    return response;
   } catch (error) {
     console.error(`API Error (${endpoint}):`, error);
     throw error;
