@@ -1,10 +1,23 @@
 // API Base Configuration
 // Use VITE_API_URL as-is, no forced '/api' suffix
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// CRITICAL: Must be set in Vercel environment variables as VITE_API_URL
+const VITE_API_URL_VALUE = import.meta.env.VITE_API_URL;
+const FALLBACK_URL = 'http://localhost:5000';
+
+// If VITE_API_URL is empty string, treat it as not set
+const API_BASE_URL = (VITE_API_URL_VALUE && VITE_API_URL_VALUE.trim()) ? VITE_API_URL_VALUE.trim() : FALLBACK_URL;
+
 console.log('🔧 API Configuration loaded:');
-console.log('  - VITE_API_URL env variable:', import.meta.env.VITE_API_URL);
+console.log('  - VITE_API_URL env variable:', VITE_API_URL_VALUE);
 console.log('  - API_BASE_URL resolved to:', API_BASE_URL);
+console.log('  - Mode:', import.meta.env.MODE);
 console.log('  - All environment variables:', import.meta.env);
+
+if (API_BASE_URL === FALLBACK_URL) {
+  console.warn('⚠️ WARNING: Using fallback URL! VITE_API_URL not set or empty in build environment.');
+  console.warn('⚠️ This will cause API requests to fail in production!');
+}
+
 export { API_BASE_URL };
 
 // API utility functions

@@ -45,11 +45,21 @@ function NewOrder (props) {
       try {
         console.log('[DEBUG] API_BASE_URL:', API_BASE_URL);
         console.log('[DEBUG] VITE_API_URL env:', import.meta.env.VITE_API_URL);
+        
+        // Validate API_BASE_URL
+        if (!API_BASE_URL || API_BASE_URL.trim() === '') {
+          throw new Error('API_BASE_URL is not configured! Check VITE_API_URL environment variable.');
+        }
+        if (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1')) {
+          console.warn('⚠️ WARNING: Using localhost URL in production build!');
+        }
+        
         const token = localStorage.getItem('authToken');
         console.log('[DEBUG] Token used for /api/stock:', token);
         setStockError("");
         const fullUrl = `${API_BASE_URL}/stock?page=1&limit=1000`;
         console.log('[DEBUG] Full stock fetch URL:', fullUrl);
+        
         const response = await fetch(fullUrl, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
