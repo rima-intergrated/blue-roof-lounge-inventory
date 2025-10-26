@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { expenseCategoryAPI, API_BASE_URL } from './services/api';
+import { expenseCategoryAPI, stockAPI, API_BASE_URL } from './services/api';
 
 function MyProfile(props) {
   const token = props.token;
@@ -110,13 +110,9 @@ function MyProfile(props) {
   
   useEffect(() => {
     if (viewMode === 'view-items' || viewMode === 'create-item') {
-      axios.get(`${API_BASE_URL}/stock`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      })
+      stockAPI.getAll()
       .then(res => {
-        setBackendItems(res.data.data.items || []);
+        setBackendItems(res.data.items || []);
       })
       .catch(() => {
         setBackendItems([]);
@@ -177,20 +173,13 @@ function MyProfile(props) {
       projectedProfit: 0
     };
     // Persist to backend (save to 'stock' collection)
-    axios.post(`${API_BASE_URL}/stock`, newDrink, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
-    })
+    stockAPI.create(newDrink)
     .then(response => {
       setDrinkName("");
       setDrinkId("");
       alert("Item added and persisted to stock database.");
-      // Refresh backend items (assume /api/stock returns items)
-      axios.get(`${API_BASE_URL}/stock`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(res => setBackendItems(res.data.data.items || []));
+      // Refresh backend items
+      stockAPI.getAll().then(res => setBackendItems(res.data.items || []));
     })
     .catch(error => {
       alert("Failed to add item: " + (error.response?.data?.message || error.message));
@@ -329,21 +318,14 @@ function MyProfile(props) {
   function confirmDelete() {
     if (deleteType === 'drink' && itemToDelete) {
       // Delete from backend using the correct item ID
-      axios.delete(`${API_BASE_URL}/stock/${itemToDelete.itemId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      })
+      stockAPI.delete(itemToDelete.itemId)
       .then(() => {
         alert('Item deleted from stock database. ID is now available for new assignment.');
         // Refresh backend items list
-          return axios.get(`${API_BASE_URL}/stock`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        return stockAPI.getAll();
       })
       .then(res => {
-        setBackendItems(res.data.data.items || []);
+        setBackendItems(res.data.items || []);
       })
       .catch(error => {
         alert('Failed to delete item from backend: ' + (error.response?.data?.message || error.message));

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { API_BASE_URL } from './services/api';
+import { API_BASE_URL, stockAPI } from './services/api';
 import formatCurrency from "./utils/formatCurrency";
 import { useLocation } from 'react-router-dom';
 function NewOrder (props) {
@@ -8,12 +8,7 @@ function NewOrder (props) {
   useEffect(() => {
     async function fetchAllStocks() {
       try {
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await stockAPI.getAll();
         if (data && data.data && data.data.items) {
           // Convert array to object keyed by itemId
           const inventoryObj = {};
@@ -43,42 +38,18 @@ function NewOrder (props) {
   useEffect(() => {
     async function fetchStocks() {
       try {
-        console.log('[DEBUG] API_BASE_URL:', API_BASE_URL);
-        console.log('[DEBUG] VITE_API_URL env:', import.meta.env.VITE_API_URL);
-        
-        // Validate API_BASE_URL
-        if (!API_BASE_URL || API_BASE_URL.trim() === '') {
-          throw new Error('API_BASE_URL is not configured! Check VITE_API_URL environment variable.');
-        }
-        if (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1')) {
-          console.warn('⚠️ WARNING: Using localhost URL in production build!');
-        }
-        
-        const token = localStorage.getItem('authToken');
-        console.log('[DEBUG] Token used for /api/stock:', token);
+        console.log('[DEBUG] Using stockAPI.getAll() method');
         setStockError("");
-        const fullUrl = `${API_BASE_URL}/stock?page=1&limit=1000`;
-        console.log('[DEBUG] Full stock fetch URL:', fullUrl);
         
-        const response = await fetch(fullUrl, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (!response.ok) {
-          let msg = `Failed to fetch stocks (status: ${response.status})`;
-          if (response.status === 401) {
-            msg = 'Unauthorized: Please log in again or check your token.';
-          }
-          setStockOptions([]);
-          setStockError(msg);
-          throw new Error(msg);
-        }
-        const data = await response.json();
+        // Use the stockAPI method instead of direct fetch
+        const data = await stockAPI.getAll();
+        console.log('[DEBUG] Stock data received:', data);
+        
         setStockOptions((data && data.data && data.data.items) ? data.data.items : []);
       } catch (err) {
         console.error('[DEBUG] Stock fetch error:', err);
         setStockOptions([]);
         setStockError(err.message || 'Error loading stocks');
-        // Optionally handle error (e.g., show notification)
       }
     }
     fetchStocks();
