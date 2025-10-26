@@ -55,7 +55,7 @@ Notes:
 	- SMTP_PASS
 	- OPTIONAL: CLOUDINARY_URL or other storage creds if you move uploads to cloud storage
 
-4. Deploy and monitor the logs for successful startup.
+4. Deploy and monitor the logs for successful startup
 
 ## Post-deploy checklist
 
