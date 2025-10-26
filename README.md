@@ -15,7 +15,7 @@ If you are developing a production application, we recommend using TypeScript wi
 
 Quick steps to push this project to GitHub and deploy:
 
-1. Create a GitHub repository (on github.com) and copy the HTTPS remote URL.
+1. Create a GitHub repository (on github.com) and copy the HTTPS remote URL..
 2. From PowerShell in the project root, run:
 
 ```powershell
