@@ -306,9 +306,13 @@ function PosTransaction (props) {
   useEffect(() => {
     async function fetchStocks() {
       try {
+        console.log('[POS DEBUG] API_BASE_URL:', API_BASE_URL);
+        console.log('[POS DEBUG] VITE_API_URL env:', import.meta.env.VITE_API_URL);
         setStockError('');
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
+        const fullUrl = `${API_BASE_URL}/stock?page=1&limit=1000`;
+        console.log('[POS DEBUG] Full stock fetch URL:', fullUrl);
+        const response = await fetch(fullUrl, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {
@@ -316,11 +320,14 @@ function PosTransaction (props) {
           if (response.status === 401) msg = 'Unauthorized: Please log in again or check your token.';
           setStockOptions([]);
           setStockError(msg);
+          console.error('[POS DEBUG] Stock fetch failed:', msg);
           return;
         }
         const data = await response.json();
+        console.log('[POS DEBUG] Stock data received:', data);
         setStockOptions((data && data.data && data.data.items) ? data.data.items : []);
       } catch (err) {
+        console.error('[POS DEBUG] Stock fetch error:', err);
         setStockOptions([]);
         setStockError(err.message || 'Error loading stocks');
       }

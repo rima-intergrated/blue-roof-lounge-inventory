@@ -43,11 +43,14 @@ function NewOrder (props) {
   useEffect(() => {
     async function fetchStocks() {
       try {
-        // Get auth token from localStorage (adjust key as needed)
-  const token = localStorage.getItem('authToken');
+        console.log('[DEBUG] API_BASE_URL:', API_BASE_URL);
+        console.log('[DEBUG] VITE_API_URL env:', import.meta.env.VITE_API_URL);
+        const token = localStorage.getItem('authToken');
         console.log('[DEBUG] Token used for /api/stock:', token);
         setStockError("");
-        const response = await fetch(`${API_BASE_URL}/stock?page=1&limit=1000`, {
+        const fullUrl = `${API_BASE_URL}/stock?page=1&limit=1000`;
+        console.log('[DEBUG] Full stock fetch URL:', fullUrl);
+        const response = await fetch(fullUrl, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {
@@ -62,6 +65,7 @@ function NewOrder (props) {
         const data = await response.json();
         setStockOptions((data && data.data && data.data.items) ? data.data.items : []);
       } catch (err) {
+        console.error('[DEBUG] Stock fetch error:', err);
         setStockOptions([]);
         setStockError(err.message || 'Error loading stocks');
         // Optionally handle error (e.g., show notification)

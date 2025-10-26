@@ -1,6 +1,10 @@
 // API Base Configuration
 // Use VITE_API_URL as-is, no forced '/api' suffix
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+console.log('🔧 API Configuration loaded:');
+console.log('  - VITE_API_URL env variable:', import.meta.env.VITE_API_URL);
+console.log('  - API_BASE_URL resolved to:', API_BASE_URL);
+console.log('  - All environment variables:', import.meta.env);
 export { API_BASE_URL };
 
 // API utility functions
