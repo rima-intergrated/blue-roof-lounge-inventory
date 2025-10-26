@@ -8,9 +8,12 @@ const PROD_BACKEND_URL = 'https://blue-roof-lounge-backend.onrender.com/api';
 // If VITE_API_URL is empty string, treat it as not set
 let API_BASE_URL = (VITE_API_URL_VALUE && VITE_API_URL_VALUE.trim()) ? VITE_API_URL_VALUE.trim() : FALLBACK_URL;
 
-// EMERGENCY FIX: If in production mode and still using localhost, force the correct URL
-if (import.meta.env.MODE === 'production' && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1'))) {
-  console.error('🚨 CRITICAL: Production build is using localhost! Forcing correct backend URL.');
+// EMERGENCY FIX: If deployed (production OR on Vercel domain) and still using localhost, force the correct URL
+const isDeployed = import.meta.env.MODE === 'production' || 
+                   (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'));
+
+if (isDeployed && (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1'))) {
+  console.error('🚨 CRITICAL: Deployed build is using localhost! Forcing correct backend URL.');
   console.error('🚨 FIX: Set VITE_API_URL in Vercel environment variables to:', PROD_BACKEND_URL);
   API_BASE_URL = PROD_BACKEND_URL;
 }
@@ -19,10 +22,11 @@ console.log('🔧 API Configuration loaded:');
 console.log('  - VITE_API_URL env variable:', VITE_API_URL_VALUE);
 console.log('  - API_BASE_URL resolved to:', API_BASE_URL);
 console.log('  - Mode:', import.meta.env.MODE);
+console.log('  - Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A');
 console.log('  - All environment variables:', import.meta.env);
 
-if (API_BASE_URL === FALLBACK_URL && import.meta.env.MODE !== 'production') {
-  console.warn('⚠️ WARNING: Using fallback URL in development mode.');
+if (API_BASE_URL === FALLBACK_URL && !isDeployed) {
+  console.warn('⚠️ WARNING: Using fallback URL in local development mode.');
 } else if (API_BASE_URL === PROD_BACKEND_URL && !VITE_API_URL_VALUE) {
   console.warn('⚠️ TEMPORARY FIX: Using hardcoded production URL because VITE_API_URL not set.');
 }
