@@ -27,44 +27,35 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
-  // Add a helpful default for the Vercel frontend; please set FRONTEND_URL in Render to override/confirm
+  // Vercel frontend - both with and without https for safety
   'https://blue-roof-lounge-inventory-system.vercel.app',
+  'http://blue-roof-lounge-inventory-system.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+
 const corsOptions = {
   // Use the allowedOrigins array directly so the cors middleware handles checks cleanly
-  origin: allowedOrigins,
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
+      return callback(new Error(msg), false);
+    }
+    console.log(`✅ CORS allowed origin: ${origin}`);
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 };
 
-// (Removed temporary OPTIONS debug logging)
-
-// Manual preflight handler placed before the cors middleware to ensure
-// we always respond to OPTIONS (preflight) requests and set the
-// Access-Control-Allow-* headers. This avoids cases where other middleware
-// can cause a 500 during preflight handling.
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    const origin = req.get('origin');
-    // Allow if no origin (server-to-server) or origin is explicitly allowed
-    if (!origin || allowedOrigins.includes(origin)) {
-      if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,X-Requested-With');
-      return res.status(204).end();
-    }
-    return res.status(403).json({ message: 'CORS origin not allowed' });
-  }
-  next();
-});
-
+// Apply CORS middleware - it handles both normal requests and OPTIONS preflight
 app.use(cors(corsOptions));
-// Keep the cors preflight handler as a fallback
-app.options('*', cors(corsOptions));
 
 // Custom middleware to conditionally apply JSON parsing
 app.use((req, res, next) => {
