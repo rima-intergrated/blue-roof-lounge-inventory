@@ -31,23 +31,31 @@ class NotificationService {
       }
 
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
         auth: {
           user: this.gmailConfig.user,
           pass: this.gmailConfig.pass
         },
         tls: {
           rejectUnauthorized: false
-        }
+        },
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,
+        socketTimeout: 10000
       });
 
-      // Verify connection
+      // Verify connection asynchronously (non-blocking)
       this.transporter.verify((error) => {
         if (error) {
           console.log('📧 Gmail SMTP configuration error:', error.message);
           console.log('💡 Please check your Gmail credentials in environment variables');
+          console.log('💡 Ensure Gmail App Password is correct and not revoked');
+          console.log('💡 Check if SMTP port 587 is accessible from your server');
         } else {
           console.log('✅ Gmail SMTP server is ready to send emails');
+          console.log(`📧 Configured email: ${this.gmailConfig.user}`);
         }
       });
     } catch (error) {
@@ -66,7 +74,15 @@ class NotificationService {
    * Generate password setup URL
    */
   generatePasswordSetupUrl(token, userId) {
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    let baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    // Ensure the URL includes the protocol
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      // For production deployments (Vercel, Netlify, etc.), use https
+      const isProduction = process.env.NODE_ENV === 'production';
+      baseUrl = isProduction ? `https://${baseUrl}` : `http://${baseUrl}`;
+    }
+    
     return `${baseUrl}/setup-password?token=${token}&userId=${userId}`;
   }
 
