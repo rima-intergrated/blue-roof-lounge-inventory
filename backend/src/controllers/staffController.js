@@ -305,18 +305,19 @@ const createStaff = async (req, res) => {
     let responseMessage = 'Staff member created successfully!';
     let responseData = { 
       staff: savedStaff,
-      passwordSetupSent: notificationResults
+      passwordSetupSent: notificationResults,
+      setupUrl: setupUrl // Always include for admin reference
     };
     
     if (emailFailed) {
       console.warn('⚠️ Email notification failed for:', savedStaff.email);
       responseMessage += ' However, email notification failed.';
-      responseData.setupUrl = setupUrl; // Include setup URL for manual sharing
       responseData.manualInstructions = `Please manually share this password setup link with ${savedStaff.name} (${savedStaff.email}): ${setupUrl}`;
       responseData.emailError = emailResult ? emailResult.error : 'No email service configured';
     } else {
       console.log('✅ Email notification sent successfully to:', savedStaff.email);
       responseMessage += ' Password setup instructions have been sent via email.';
+      responseData.emailSentTo = savedStaff.email;
     }
 
     res.status(201).json({
