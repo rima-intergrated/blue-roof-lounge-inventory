@@ -1,32 +1,65 @@
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 class NotificationService {
   constructor() {
-    // Gmail SMTP configuration
-    // Prefer explicit environment variables. Support either GMAIL_* or generic EMAIL_* names.
+    // Email service configuration - supports Resend API (recommended) and Gmail SMTP (fallback)
+    this.resendApiKey = process.env.RESEND_API_KEY || null;
+    this.resendFromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    
+    // Gmail SMTP configuration (fallback)
     this.gmailConfig = {
       user: process.env.GMAIL_USER || process.env.EMAIL_USER || null,
       pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || null
     };
 
-    // Create nodemailer transporter for Gmail (lazy or conditional init)
+    // Initialize email services
+    this.resend = null;
     this.transporter = null;
-    // Initialize transporter only when email notifications are explicitly enabled
+    
+    // Initialize email services only when notifications are enabled
     if ((process.env.ENABLE_EMAIL_NOTIFICATIONS || 'false').toLowerCase() === 'true') {
-      this.initializeTransporter();
+      this.initializeEmailServices();
     } else {
-      console.log('ℹ️ Email notifications are disabled. SMTP transporter not initialized.');
+      console.log('ℹ️ Email notifications are disabled. Email services not initialized.');
     }
   }
 
   /**
-   * Initialize Gmail SMTP transporter
+   * Initialize email services (Resend API preferred, Gmail SMTP as fallback)
    */
-  initializeTransporter() {
+  initializeEmailServices() {
+    // Try to initialize Resend API first (recommended for cloud platforms)
+    if (this.resendApiKey) {
+      try {
+        this.resend = new Resend(this.resendApiKey);
+        console.log('✅ Resend email API initialized successfully');
+        console.log(`📧 Sending from: ${this.resendFromEmail}`);
+      } catch (error) {
+        console.error('❌ Failed to initialize Resend API:', error.message);
+        this.resend = null;
+      }
+    } else {
+      console.log('ℹ️ Resend API key not found. Trying Gmail SMTP...');
+    }
+
+    // Initialize Gmail SMTP as fallback (if Resend not configured)
+    if (!this.resend) {
+      this.initializeGmailTransporter();
+    }
+  }
+
+  /**
+   * Initialize Gmail SMTP transporter (fallback method)
+   */
+  initializeGmailTransporter() {
     try {
       if (!this.gmailConfig.user || !this.gmailConfig.pass) {
-        console.log('⚠️ Gmail credentials are missing; transporter will not be created.');
+        console.log('⚠️ Gmail credentials are missing; SMTP transporter will not be created.');
+        console.log('💡 Recommendation: Use Resend API instead (https://resend.com)');
+        console.log('   - Set RESEND_API_KEY environment variable');
+        console.log('   - Set RESEND_FROM_EMAIL (e.g., noreply@yourdomain.com)');
         return;
       }
 
@@ -50,9 +83,9 @@ class NotificationService {
       this.transporter.verify((error) => {
         if (error) {
           console.log('📧 Gmail SMTP configuration error:', error.message);
-          console.log('💡 Please check your Gmail credentials in environment variables');
-          console.log('💡 Ensure Gmail App Password is correct and not revoked');
-          console.log('💡 Check if SMTP port 587 is accessible from your server');
+          console.log('💡 Gmail SMTP ports may be blocked on this server');
+          console.log('💡 Recommendation: Use Resend API instead (works on all cloud platforms)');
+          this.transporter = null; // Disable failed transporter
         } else {
           console.log('✅ Gmail SMTP server is ready to send emails');
           console.log(`📧 Configured email: ${this.gmailConfig.user}`);
@@ -87,12 +120,12 @@ class NotificationService {
   }
 
   /**
-   * Send password setup email using Gmail SMTP
+   * Send password setup email using Resend API (preferred) or Gmail SMTP (fallback)
    */
   async sendPasswordSetupEmail(email, name, setupUrl, position) {
     const emailContent = this.generatePasswordSetupEmailContent(name, setupUrl, position);
     
-    // Always log to console for development
+    // Always log to console for development/debugging
     console.log('\n📧 EMAIL NOTIFICATION');
     console.log('='.repeat(50));
     console.log(`To: ${email}`);
@@ -100,26 +133,68 @@ class NotificationService {
     console.log('Setup URL:', setupUrl);
     console.log('='.repeat(50));
     
-    // Check if Gmail is configured
-    if (!this.transporter || !this.gmailConfig.user || !this.gmailConfig.pass) {
-      console.log('⚠️ Gmail SMTP not configured. Using console logging only.');
-      console.log('💡 To enable Gmail SMTP:');
-      console.log('   1. Set GMAIL_USER environment variable');
-      console.log('   2. Set GMAIL_APP_PASSWORD environment variable');
-      console.log('   3. Enable 2FA on Gmail and generate App Password');
-      
-      return { 
-        success: false, 
-        method: 'console', 
-        recipient: email,
-        error: 'Gmail SMTP not configured',
-        setupUrl: setupUrl,
-        fallbackMessage: `Gmail not configured. Please manually share the setup link with ${name} (${email}): ${setupUrl}`
-      };
+    // Try Resend API first (recommended for cloud platforms)
+    if (this.resend) {
+      try {
+        const result = await this.resend.emails.send({
+          from: `Blue Roof Lounge <${this.resendFromEmail}>`,
+          to: email,
+          subject: emailContent.subject,
+          html: emailContent.html
+        });
+        
+        console.log(`✅ Email sent successfully to ${email} via Resend API`);
+        console.log(`📧 Message ID: ${result.id}`);
+        
+        return { 
+          success: true, 
+          method: 'resend-api', 
+          recipient: email,
+          messageId: result.id,
+          message: 'Email sent successfully via Resend API'
+        };
+        
+      } catch (error) {
+        console.error('❌ Resend API email failed:', error.message);
+        console.log('⚠️ Trying Gmail SMTP fallback...');
+        
+        // Try Gmail SMTP as fallback
+        if (this.transporter) {
+          return await this.sendViaGmailSMTP(email, emailContent, name, setupUrl);
+        }
+      }
     }
     
+    // Try Gmail SMTP if Resend not available
+    if (this.transporter) {
+      return await this.sendViaGmailSMTP(email, emailContent, name, setupUrl);
+    }
+    
+    // No email service configured - return fallback instructions
+    console.log('⚠️ No email service configured. Using console logging only.');
+    console.log('💡 To enable email notifications:');
+    console.log('   Option 1 (Recommended): Resend API');
+    console.log('     - Set RESEND_API_KEY environment variable');
+    console.log('     - Set RESEND_FROM_EMAIL (optional)');
+    console.log('   Option 2: Gmail SMTP');
+    console.log('     - Set GMAIL_USER environment variable');
+    console.log('     - Set GMAIL_APP_PASSWORD environment variable');
+    
+    return { 
+      success: false, 
+      method: 'console', 
+      recipient: email,
+      error: 'No email service configured',
+      setupUrl: setupUrl,
+      fallbackMessage: `Email service not configured. Please manually share the setup link with ${name} (${email}): ${setupUrl}`
+    };
+  }
+
+  /**
+   * Send email via Gmail SMTP
+   */
+  async sendViaGmailSMTP(email, emailContent, name, setupUrl) {
     try {
-      // Send email using Gmail SMTP
       const mailOptions = {
         from: {
           name: 'Blue Roof Lounge',
