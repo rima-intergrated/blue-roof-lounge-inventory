@@ -59,10 +59,33 @@ const sendStaffPasswordSetup = async (req, res) => {
       setupUrl
     );
 
+    // Check if email was successfully sent (supports Resend API, Gmail SMTP, or generic email)
+    const emailResult = notificationResults.find(n => 
+      n.method === 'resend-api' || 
+      n.method === 'gmail-smtp' || 
+      n.method === 'email'
+    );
+    const emailSuccess = emailResult && emailResult.success;
+    
+    // Log results for debugging
+    console.log('📧 Password reset email results:', JSON.stringify(notificationResults, null, 2));
+    
+    let responseMessage = 'Password setup instructions sent';
+    if (!emailSuccess) {
+      console.warn('⚠️ Password reset email failed for:', staff.email);
+      responseMessage = 'Password setup link generated, but email failed to send';
+    } else {
+      console.log('✅ Password reset email sent successfully to:', staff.email);
+    }
+
     res.json({
       success: true,
-      message: 'Password setup instructions sent',
-      data: { setupUrl, notificationResults }
+      message: responseMessage,
+      data: { 
+        setupUrl, 
+        notificationResults,
+        emailSent: emailSuccess
+      }
     });
 
   } catch (error) {
@@ -268,9 +291,16 @@ const createStaff = async (req, res) => {
       setupUrl
     );
 
-    // Check if email was successfully sent
-    const emailResult = notificationResults.find(n => n.method === 'gmail-smtp' || n.method === 'email');
+    // Check if email was successfully sent (supports Resend API, Gmail SMTP, or generic email)
+    const emailResult = notificationResults.find(n => 
+      n.method === 'resend-api' || 
+      n.method === 'gmail-smtp' || 
+      n.method === 'email'
+    );
     const emailFailed = !emailResult || !emailResult.success;
+    
+    // Log email sending results for debugging
+    console.log('📧 Email notification results:', JSON.stringify(notificationResults, null, 2));
     
     let responseMessage = 'Staff member created successfully!';
     let responseData = { 
@@ -279,10 +309,13 @@ const createStaff = async (req, res) => {
     };
     
     if (emailFailed) {
+      console.warn('⚠️ Email notification failed for:', savedStaff.email);
       responseMessage += ' However, email notification failed.';
       responseData.setupUrl = setupUrl; // Include setup URL for manual sharing
       responseData.manualInstructions = `Please manually share this password setup link with ${savedStaff.name} (${savedStaff.email}): ${setupUrl}`;
+      responseData.emailError = emailResult ? emailResult.error : 'No email service configured';
     } else {
+      console.log('✅ Email notification sent successfully to:', savedStaff.email);
       responseMessage += ' Password setup instructions have been sent via email.';
     }
 

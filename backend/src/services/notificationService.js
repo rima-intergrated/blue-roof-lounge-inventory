@@ -18,11 +18,19 @@ class NotificationService {
     this.resend = null;
     this.transporter = null;
     
+    // Debug: Log environment variable status
+    const emailEnabled = (process.env.ENABLE_EMAIL_NOTIFICATIONS || 'false').toLowerCase();
+    console.log('🔍 Email Configuration Check:');
+    console.log(`   ENABLE_EMAIL_NOTIFICATIONS: "${emailEnabled}"`);
+    console.log(`   RESEND_API_KEY: ${this.resendApiKey ? '✅ Set' : '❌ Not set'}`);
+    console.log(`   GMAIL_USER: ${this.gmailConfig.user ? '✅ Set' : '❌ Not set'}`);
+    
     // Initialize email services only when notifications are enabled
-    if ((process.env.ENABLE_EMAIL_NOTIFICATIONS || 'false').toLowerCase() === 'true') {
+    if (emailEnabled === 'true') {
       this.initializeEmailServices();
     } else {
-      console.log('ℹ️ Email notifications are disabled. Email services not initialized.');
+      console.log(`ℹ️ Email notifications are disabled (value: "${emailEnabled}"). Email services not initialized.`);
+      console.log('💡 Set ENABLE_EMAIL_NOTIFICATIONS=true to enable email sending');
     }
   }
 
