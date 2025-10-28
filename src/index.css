@@ -853,36 +853,80 @@ input.reg-input-field {
   transition: all 0.3s ease;
 }
 
-/* New: grid layout for staff lists to keep columns uniform and responsive */
+/* Table-based layout for staff and salary lists - more reliable than grid for tables */
 .salary-items, .salary-item-info {
-  display: grid;
-  grid-template-columns: 1.5fr 0.8fr 1fr 2fr 1.2fr 2fr 0.8fr 0.9fr; /* Staff name, Gender, Phone, Email, Position, Address, Status, Actions */
-  gap: 12px;
-  align-items: center;
+  display: table;
   width: 100%;
-  box-sizing: border-box;
+  table-layout: fixed; /* Forces columns to respect width settings */
+  border-collapse: collapse;
 }
 
-.salary-items h2, .salary-item-info p {
-  margin: 0;
+.salary-items h2, .salary-item-info p, .salary-item-info > div {
+  display: table-cell;
   padding: 10px 8px;
+  vertical-align: middle;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Ensure action buttons area doesn't shrink too much */
+/* DEFAULT: Staff list views (8 columns) - used in RegisterNewStaff.jsx, MyProfile.jsx */
+.staff-list-container .salary-items h2:nth-child(1), 
+.staff-list-container .salary-item-info > *:nth-child(1) { width: 15%; } /* Staff name */
+.staff-list-container .salary-items h2:nth-child(2), 
+.staff-list-container .salary-item-info > *:nth-child(2) { width: 8%; }  /* Gender */
+.staff-list-container .salary-items h2:nth-child(3), 
+.staff-list-container .salary-item-info > *:nth-child(3) { width: 10%; } /* Phone */
+.staff-list-container .salary-items h2:nth-child(4), 
+.staff-list-container .salary-item-info > *:nth-child(4) { width: 20%; } /* Email */
+.staff-list-container .salary-items h2:nth-child(5), 
+.staff-list-container .salary-item-info > *:nth-child(5) { width: 12%; } /* Position */
+.staff-list-container .salary-items h2:nth-child(6), 
+.staff-list-container .salary-item-info > *:nth-child(6) { width: 18%; } /* Address */
+.staff-list-container .salary-items h2:nth-child(7), 
+.staff-list-container .salary-item-info > *:nth-child(7) { width: 8%; }  /* Status */
+.staff-list-container .salary-items h2:nth-child(8), 
+.staff-list-container .salary-item-info > *:nth-child(8) { width: 9%; }  /* Actions */
+
+/* SALARY VIEWS: Salaries Pending (8 columns) - used in AdvancePayment.jsx */
+.salary-container .salary-items h2:nth-child(1), 
+.salary-container .salary-item-info > *:nth-child(1) { width: 12%; } /* Date issued */
+.salary-container .salary-items h2:nth-child(2), 
+.salary-container .salary-item-info > *:nth-child(2) { width: 16%; } /* Staff name - INCREASED */
+.salary-container .salary-items h2:nth-child(3), 
+.salary-container .salary-item-info > *:nth-child(3) { width: 13%; } /* Salary */
+.salary-container .salary-items h2:nth-child(4), 
+.salary-container .salary-item-info > *:nth-child(4) { width: 12%; } /* Category */
+.salary-container .salary-items h2:nth-child(5), 
+.salary-container .salary-item-info > *:nth-child(5) { width: 12%; } /* Amount */
+.salary-container .salary-items h2:nth-child(6), 
+.salary-container .salary-item-info > *:nth-child(6) { width: 12%; } /* Pending */
+.salary-container .salary-items h2:nth-child(7), 
+.salary-container .salary-item-info > *:nth-child(7) { width: 12%; } /* Pension */
+.salary-container .salary-items h2:nth-child(8), 
+.salary-container .salary-item-info > *:nth-child(8) { width: 11%; } /* Action */
+
+/* Ensure action buttons area displays properly */
 .salary-items .action, .salary-item-info .action {
+  display: table-cell;
+  text-align: center;
+}
+
+.salary-item-info .action > div {
   display: flex;
   justify-content: center;
   gap: 8px;
+  align-items: center;
 }
 
 /* Responsive: allow horizontal scroll on narrow screens */
 @media (max-width: 900px) {
   .salary-items, .salary-item-info {
-    display: grid;
-    grid-template-columns: 1.6fr 0.9fr 1fr 2.4fr 1.2fr 2.4fr 0.9fr 1fr;
+    min-width: 900px; /* Minimum table width */
+  }
+  
+  .staff-list-information, .salary-information {
     overflow-x: auto;
   }
 }
