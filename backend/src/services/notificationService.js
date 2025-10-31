@@ -35,10 +35,19 @@ class NotificationService {
   }
 
   /**
-   * Initialize email services (Resend API preferred, Gmail SMTP as fallback)
+   * Initialize email services (Gmail SMTP preferred when FORCE_EMAIL_SERVICE=gmail)
    */
   initializeEmailServices() {
-    // Try to initialize Resend API first (recommended for cloud platforms)
+    const forceService = process.env.FORCE_EMAIL_SERVICE;
+    
+    // If forcing Gmail SMTP, initialize it first and skip Resend
+    if (forceService === 'gmail') {
+      console.log('🔧 FORCE_EMAIL_SERVICE=gmail detected - Using Gmail SMTP only');
+      this.initializeGmailTransporter();
+      return;
+    }
+    
+    // Default behavior: Try to initialize Resend API first (recommended for cloud platforms)
     if (this.resendApiKey) {
       try {
         this.resend = new Resend(this.resendApiKey);
@@ -128,7 +137,7 @@ class NotificationService {
   }
 
   /**
-   * Send password setup email using Resend API (preferred) or Gmail SMTP (fallback)
+   * Send password setup email using Gmail SMTP (when forced) or Resend API (default)
    */
   async sendPasswordSetupEmail(email, name, setupUrl, position) {
     const emailContent = this.generatePasswordSetupEmailContent(name, setupUrl, position);
@@ -141,7 +150,15 @@ class NotificationService {
     console.log('Setup URL:', setupUrl);
     console.log('='.repeat(50));
     
-    // Try Resend API first (recommended for cloud platforms)
+    const forceService = process.env.FORCE_EMAIL_SERVICE;
+    
+    // If forcing Gmail SMTP, try it first
+    if (forceService === 'gmail' && this.transporter) {
+      console.log('🔧 Using Gmail SMTP (forced)');
+      return await this.sendViaGmailSMTP(email, emailContent, name, setupUrl);
+    }
+    
+    // Default behavior: Try Resend API first (recommended for cloud platforms)
     if (this.resend) {
       try {
         const result = await this.resend.emails.send({
