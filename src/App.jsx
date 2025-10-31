@@ -16,6 +16,7 @@ import { LoadingSpinner } from './components/common/FeedbackComponents';
 import ConnectionStatus from './components/common/ConnectionStatus';
 import PermissionGuard from './components/common/PermissionGuard';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import RimaAssistant from './components/RimaAssistant';
 
 // Component to determine the default route. Prefer the last-view saved in
 // localStorage (if valid and not a login/setup path). Otherwise fall back
@@ -69,6 +70,7 @@ const AppLayout = () => {
   return (
     <>
       <BlueRoofHeader user={user} onLogout={handleLogout} />
+      <RimaAssistant />
       <Routes>
         <Route path="/sales" element={
           <PermissionGuard module="sales">
