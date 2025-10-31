@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { staffAPI, positionAPI, authAPI } from './services/api';
 import { LoadingSpinner, ErrorMessage, SuccessMessage } from './components/common/FeedbackComponents';
 import { useAuth } from './context/AuthContext';
+import StaffRegistrationModal from './components/StaffRegistrationModal';
 
 function RegisterNewStaff({ staff = [], setStaff }) {
   const { user, loading: authLoading } = useAuth();
@@ -26,6 +27,15 @@ function RegisterNewStaff({ staff = [], setStaff }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [resendLoadingMap, setResendLoadingMap] = useState({});
+  
+  // Modal states
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    staffName: '',
+    email: '',
+    setupUrl: '',
+    emailSent: false
+  });
   
   const [newPositionName, setNewPositionName] = useState("");
   const [selectedPosition, setSelectedPosition] = useState("");
@@ -151,41 +161,22 @@ function RegisterNewStaff({ staff = [], setStaff }) {
       const staffData = result.data.staff;
       const emailSent = result.data.passwordSetupSent;
       const setupUrl = result.data.setupUrl;
-      const manualInstructions = result.data.manualInstructions;
       
-      let successMsg = `✅ Staff member "${staffData.name}" registered successfully!`;
-      
+      // Check if email was sent successfully
+      let emailDelivered = false;
       if (emailSent && emailSent.length > 0) {
-        const emailResult = emailSent.find(n => n.method === 'gmail-smtp' || n.method === 'email');
-        if (emailResult && emailResult.success) {
-          successMsg += `\n\n📧 Welcome email with account setup instructions has been sent to: ${staffData.email}`;
-          successMsg += `\n\nThe new staff member will receive:`;
-          successMsg += `\n• Account setup link (expires in 24 hours)`;
-          successMsg += `\n• Instructions to create their password`;
-          successMsg += `\n• Access to the Blue Roof Restaurant system`;
-        } else {
-          successMsg += `\n\n⚠️ Email notification failed to send automatically.`;
-          successMsg += `\n\n🔗 MANUAL ACTION REQUIRED:`;
-          successMsg += `\nPlease share this password setup link with ${staffData.name}:`;
-          successMsg += `\n\n${setupUrl}`;
-          successMsg += `\n\n📝 Instructions for ${staffData.name}:`;
-          successMsg += `\n1. Click the link above`;
-          successMsg += `\n2. Create a strong password (minimum 8 characters)`;
-          successMsg += `\n3. Use email: ${staffData.email} as username`;
-          successMsg += `\n4. Link expires in 24 hours`;
-          
-          // Copy to clipboard if possible
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(setupUrl).then(() => {
-              successMsg += `\n\n📋 Setup link copied to clipboard!`;
-            }).catch(() => {
-              successMsg += `\n\n💡 Tip: Copy the setup link above to share it easily.`;
-            });
-          }
-        }
+        const emailResult = emailSent.find(n => n.method === 'gmail-smtp' || n.method === 'resend-api' || n.method === 'email');
+        emailDelivered = emailResult && emailResult.success;
       }
       
-      setSuccessMessage(successMsg);
+      // Show modal with registration details
+      setModalData({
+        staffName: staffData.name,
+        email: staffData.email,
+        setupUrl: setupUrl,
+        emailSent: emailDelivered
+      });
+      setShowRegistrationModal(true);
       
       // Clear form
       setStaffName("");
@@ -196,12 +187,19 @@ function RegisterNewStaff({ staff = [], setStaff }) {
       setStaffAddress("");
       setStaffSalary("");
       setIsEmployed(true);
-      
-      // Auto-clear success message after 10 seconds
-      setTimeout(() => setSuccessMessage(""), 10000);
     }
     
     setFormLoading(false);
+  };
+
+  const handleCloseModal = () => {
+    setShowRegistrationModal(false);
+    setModalData({
+      staffName: '',
+      email: '',
+      setupUrl: '',
+      emailSent: false
+    });
   };
  
   const handleNameChange = (event) => {
@@ -911,6 +909,15 @@ function RegisterNewStaff({ staff = [], setStaff }) {
         </div>
       )}
 
+      {/* Staff Registration Success Modal */}
+      <StaffRegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={handleCloseModal}
+        staffName={modalData.staffName}
+        email={modalData.email}
+        setupUrl={modalData.setupUrl}
+        emailSent={modalData.emailSent}
+      />
 
   </>);
 }
