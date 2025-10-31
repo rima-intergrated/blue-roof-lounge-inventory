@@ -201,6 +201,44 @@ function RegisterNewStaff({ staff = [], setStaff }) {
       emailSent: false
     });
   };
+
+  const handlePasswordReset = async (member) => {
+    const memberKey = member._id || member.email;
+    setResendLoadingMap(m => ({ ...m, [memberKey]: true }));
+    
+    try {
+      const resp = await staffAPI.sendPasswordSetup(member._id);
+      
+      if (resp && resp.success) {
+        // Check if email was sent successfully
+        let emailDelivered = false;
+        if (resp.data && resp.data.passwordSetupSent) {
+          const emailResults = resp.data.passwordSetupSent;
+          if (emailResults && emailResults.length > 0) {
+            const emailResult = emailResults.find(n => n.method === 'gmail-smtp' || n.method === 'resend-api' || n.method === 'email');
+            emailDelivered = emailResult && emailResult.success;
+          }
+        }
+        
+        // Show modal with reset details
+        setModalData({
+          staffName: member.name,
+          email: member.email,
+          setupUrl: resp.data.setupUrl || '',
+          emailSent: emailDelivered
+        });
+        setShowRegistrationModal(true);
+        
+      } else {
+        setError(resp.message || 'Failed to send password setup link');
+      }
+    } catch (err) {
+      console.error('Send setup error:', err);
+      setError(err.message || 'Failed to send password setup link');
+    } finally {
+      setResendLoadingMap(m => ({ ...m, [memberKey]: false }));
+    }
+  };
  
   const handleNameChange = (event) => {
     setStaffName(event.target.value);
@@ -635,29 +673,7 @@ function RegisterNewStaff({ staff = [], setStaff }) {
                           <div>
                             <button
                               className="reset-password-button"
-                              onClick={async () => {
-                                const memberKey = member._id || member.email || actualIndex;
-                                setResendLoadingMap(m => ({ ...m, [memberKey]: true }));
-                                try {
-                                  const resp = await staffAPI.sendPasswordSetup(member._id);
-                                  if (resp && resp.success) {
-                                    setSuccessMessage('Password setup link sent (check console/email).');
-                                    // Copy setupUrl if returned (development)
-                                    if (resp.data && resp.data.setupUrl && navigator.clipboard) {
-                                      try { await navigator.clipboard.writeText(resp.data.setupUrl); }
-                                      catch (e) { /* ignore */ }
-                                    }
-                                  } else {
-                                    setError(resp.message || 'Failed to send password setup link');
-                                  }
-                                } catch (err) {
-                                  console.error('Send setup error:', err);
-                                  setError(err.message || 'Failed to send password setup link');
-                                } finally {
-                                  setTimeout(() => setSuccessMessage(''), 10000);
-                                  setResendLoadingMap(m => ({ ...m, [memberKey]: false }));
-                                }
-                              }}
+                              onClick={() => handlePasswordReset(member)}
                               disabled={!!resendLoadingMap[member._id || member.email || actualIndex]}
                             >
                               {resendLoadingMap[member._id || member.email || actualIndex] ? 'Sending...' : 'Reset'}
