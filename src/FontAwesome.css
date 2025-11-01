@@ -1,0 +1,49 @@
+/* ============================================
+   FONT AWESOME ICON STYLING
+   ============================================ */
+
+/* Navigation icons in mobile menu */
+.nav-icon {
+  font-size: 1.3rem;
+  min-width: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+
+/* Ensure Font Awesome icons render properly */
+.nav-icon i,
+.sidebar-nav-icon,
+.sidebar-brand-icon,
+.fas,
+.fab {
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Icon color inheritance */
+.nav-icon i {
+  color: inherit;
+}
+
+/* Success/status icons */
+.success-icon i,
+.status-icon i {
+  color: inherit;
+}
+
+/* Share button icons */
+.share-icon i {
+  margin-right: 0.25rem;
+}
+
+/* Responsive icon sizing */
+@media (max-width: 480px) {
+  .nav-icon {
+    font-size: 1.2rem;
+    min-width: 1.4rem;
+  }
+}

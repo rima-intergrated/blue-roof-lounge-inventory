@@ -116,15 +116,29 @@ function NewOrder (props) {
   const [viewMode, setViewMode] = useState('new-order');
   const [stockSheetPage, setStockSheetPage] = useState(1);
   const [itemOrderedPage, setItemOrderedPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 6;
 
   // Ensure stockSheetPage stays within bounds when inventory changes
   useEffect(() => {
     const allItems = Object.values(inventory || {});
     const totalPages = Math.max(1, Math.ceil(allItems.length / itemsPerPage));
-    if (stockSheetPage > totalPages) setStockSheetPage(totalPages);
-    if (stockSheetPage < 1) setStockSheetPage(1);
-  }, [inventory, stockSheetPage, itemsPerPage]);
+    if (stockSheetPage > totalPages) {
+      setStockSheetPage(totalPages);
+    } else if (stockSheetPage < 1) {
+      setStockSheetPage(1);
+    }
+    // Only update if out of bounds, not every render
+  }, [inventory, itemsPerPage, stockSheetPage]);
+  // Pagination handler using callback form
+  const handlePageChange = (newPage) => {
+    setStockSheetPage(prev => {
+      const allItems = Object.values(inventory || {});
+      const totalPages = Math.max(1, Math.ceil(allItems.length / itemsPerPage));
+      if (newPage < 1) return 1;
+      if (newPage > totalPages) return totalPages;
+      return newPage;
+    });
+  };
   const [isSaving, setIsSaving] = useState(false);
   const [receiptsPage, setReceiptsPage] = useState(1);
   const receiptsPerPage = 5;
@@ -140,7 +154,6 @@ function NewOrder (props) {
   // Pagination Controls Component
   const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
     if (totalPages <= 1) return null;
-    
     return (
       <div style={{
         display: 'flex',
@@ -164,7 +177,6 @@ function NewOrder (props) {
         >
           Previous
         </button>
-        
         <span style={{ 
           fontSize: '14px',
           color: '#666',
@@ -172,7 +184,6 @@ function NewOrder (props) {
         }}>
           Page {currentPage} of {totalPages}
         </span>
-        
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
@@ -762,6 +773,7 @@ function NewOrder (props) {
                     <p className="item">{productOrdered.itemName}</p>
                     <p className="cost-price">{formatCurrency(productOrdered.costPrice)}</p>
                     <p className="selling-price">{productOrdered.quantityOrdered}</p>
+                    <p className="stock-value">{formatCurrency(Number(productOrdered.costPrice) * Number(productOrdered.quantityOrdered))}</p>
                     <div className="stock-value" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                       <button
                         onClick={() => {
@@ -1104,8 +1116,9 @@ function NewOrder (props) {
               {console.log('🖼️ Rendering stocksheet with', Object.values(inventory).length, 'items')}
               {Object.values(inventory).length === 0 && <p>No inventory items to display</p>}
               {(() => {
+
                 const source = Object.values(inventory || {});
-                const perPage = itemsPerPage;
+                const perPage = 6;
                 const totalPages = Math.max(1, Math.ceil(source.length / perPage));
                 const currentPage = Math.max(1, Math.min(stockSheetPage, totalPages));
                 const paginatedDocuments = source.slice((currentPage - 1) * perPage, currentPage * perPage);
@@ -1116,14 +1129,38 @@ function NewOrder (props) {
                   );
                 }
 
+                // Calculate totals for the current page
+                const totalCostPrice = paginatedDocuments.reduce((sum, item) => sum + Number(item.costPrice || 0), 0);
+                const totalSellingPrice = paginatedDocuments.reduce((sum, item) => sum + Number(item.sellingPrice || 0), 0);
+                const totalStock = paginatedDocuments.reduce((sum, item) => sum + Number(item.currentStock || 0), 0);
+                const totalStockValue = paginatedDocuments.reduce((sum, item) => sum + Number(item.stockValue || 0), 0);
+                const totalProjectedProfit = paginatedDocuments.reduce((sum, item) => sum + Number(item.projectedProfit || 0), 0);
+
                 return (
                   <>
                     {paginatedDocuments.map((inventoryItem, index) => {
                       const itemId = inventoryItem.itemId || inventoryItem._id || `idx-${index}`;
-                      const avgCostPrice = formatCurrency(inventoryItem.avgCostPrice || 0);
-                      const avgSellingPrice = formatCurrency(inventoryItem.avgSellingPrice || 0);
-                      const stockValue = formatCurrency((Number(inventoryItem.avgCostPrice || 0) * Number(inventoryItem.currentStock || 0)));
-                      const projectedProfit = formatCurrency((Number(inventoryItem.avgSellingPrice || 0) * Number(inventoryItem.currentStock || 0)) - (Number(inventoryItem.avgCostPrice || 0) * Number(inventoryItem.currentStock || 0)));
+                      // Calculate values if missing
+                      const avgCostPrice = formatCurrency(
+                        inventoryItem.avgCostPrice !== undefined
+                          ? inventoryItem.avgCostPrice
+                          : Number(inventoryItem.costPrice || 0)
+                      );
+                      const avgSellingPrice = formatCurrency(
+                        inventoryItem.avgSellingPrice !== undefined
+                          ? inventoryItem.avgSellingPrice
+                          : Number(inventoryItem.sellingPrice || 0)
+                      );
+                      const stockValue = formatCurrency(
+                        inventoryItem.stockValue !== undefined
+                          ? inventoryItem.stockValue
+                          : Number(inventoryItem.costPrice || 0) * Number(inventoryItem.currentStock || 0)
+                      );
+                      const projectedProfit = formatCurrency(
+                        inventoryItem.projectedProfit !== undefined
+                          ? inventoryItem.projectedProfit
+                          : (Number(inventoryItem.sellingPrice || 0) - Number(inventoryItem.costPrice || 0)) * Number(inventoryItem.currentStock || 0)
+                      );
                       const lastUpdated = inventoryItem.updatedAt
                         ? new Date(inventoryItem.updatedAt).toLocaleDateString()
                         : (inventoryItem.lastStockUpdate ? new Date(inventoryItem.lastStockUpdate).toLocaleDateString() : 'N/A');
@@ -1132,21 +1169,38 @@ function NewOrder (props) {
                         <div className="item-info" key={itemId}>
                           <p className="item">{itemId}</p>
                           <p className="item">{inventoryItem.itemName}</p>
-                          <p className="cost-price">{inventoryItem.costPrice}</p>
-                          <p className="selling-price">{inventoryItem.sellingPrice}</p>
+                          <p className="cost-price">{avgCostPrice}</p>
+                          <p className="selling-price">{avgSellingPrice}</p>
                           <p className="quantity-available">{inventoryItem.currentStock || 0}</p>
-                          <p className="stock-value">{inventoryItem.stockValue}</p>
-                          <p className="stock-value">{inventoryItem.projectedProfit}</p>
+                          <p className="stock-value">{stockValue}</p>
+                          <p className="stock-value">{projectedProfit}</p>
                           <p className="stock-value">{lastUpdated}</p>
                         </div>
                       );
                     })}
 
-                    {/* Pagination Controls (delivery-notes style) */}
+                    {/* Total row before pagination controls */}
+                    <div className="item-info" style={{ background: '#f8f9fa', fontWeight: 'bold', borderTop: '2px solid #e0e0e0' }}>
+                      <p className="item">Total</p>
+                      <p className="item">—</p>
+                      <p className="cost-price">{formatCurrency(totalCostPrice)}</p>
+                      <p className="selling-price">{formatCurrency(totalSellingPrice)}</p>
+                      <p className="quantity-available">{totalStock}</p>
+                      <p className="stock-value">{formatCurrency(totalStockValue)}</p>
+                      <p className="stock-value">{formatCurrency(totalProjectedProfit)}</p>
+                      <p className="cost-price">{totalStock > 0 ? formatCurrency(totalCostPrice / totalStock) : formatCurrency(0)}</p>
+                      <p className="selling-price">{totalStock > 0 ? formatCurrency(totalSellingPrice / totalStock) : formatCurrency(0)}</p>
+                    </div>
+
+                    {/* Pagination Controls (functional) */}
                     {totalPages > 1 && (
                       <div style={{ gridColumn: '1 / -1', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
                         <button
-                          onClick={() => setStockSheetPage(Math.max(1, currentPage - 1))}
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setStockSheetPage(prev => Math.max(1, prev - 1));
+                          }}
                           disabled={currentPage === 1}
                           style={{ padding: '0.5rem 1rem', backgroundColor: currentPage === 1 ? '#e9ecef' : '#007bff', color: currentPage === 1 ? '#6c757d' : 'white', border: 'none', borderRadius: '4px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
                         >
@@ -1156,7 +1210,11 @@ function NewOrder (props) {
                         <span style={{ fontWeight: 'bold' }}>Page {currentPage} of {totalPages}</span>
 
                         <button
-                          onClick={() => setStockSheetPage(Math.min(totalPages, currentPage + 1))}
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setStockSheetPage(prev => Math.min(totalPages, prev + 1));
+                          }}
                           disabled={currentPage === totalPages}
                           style={{ padding: '0.5rem 1rem', backgroundColor: currentPage === totalPages ? '#e9ecef' : '#007bff', color: currentPage === totalPages ? '#6c757d' : 'white', border: 'none', borderRadius: '4px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
                         >

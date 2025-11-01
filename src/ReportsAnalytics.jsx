@@ -676,7 +676,7 @@ function ReportsAnalytics (props) {
                       fontFamily: 'Arial, sans-serif',
                       fontWeight: isOverdue ? 'bold' : 'normal'
                     }}>
-                      {record.dateSold} {isOverdue && `(${daysDifference} days)`}
+                      {new Date(record.dateSold).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })} {isOverdue && `(${daysDifference} days)`}
                     </p>
                     <p className="item">{getItemName(record)}</p>
                     <p className="item">{record.quantitySold}</p>
@@ -858,111 +858,111 @@ function ReportsAnalytics (props) {
           {(() => {
             // Prefer persisted lowStockItems when loaded, otherwise fall back to inventory prop
             const itemsSource = Array.isArray(lowStockItems) ? lowStockItems : Object.entries(inventory).map(([k, v]) => ({ ...v, _id: v._id || v.id || k }));
+            console.log('Low Stock Items:', itemsSource);
             const filtered = itemsSource.filter(item => (item.currentStock || 0) <= (item.reorderLevel || 5));
+            console.log('Filtered Low Stock:', filtered);
 
+            const itemsPerPage = 5;
+            const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
             return (
-              <div style={{
-                maxHeight: '400px',
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                backgroundColor: 'white'
-              }}>
-                {lowStockLoading ? (
-                  <div style={{ padding: '1rem', textAlign: 'center' }}>Loading low stock items…</div>
-                ) : filtered.length === 0 ? (
-                  <div className="item-info">
-                    <p className="item">All items well stocked</p>
-                    <p className="cost-price">-</p>
-                    <p className="selling-price">-</p>
-                    <p className="quantity-available">-</p>
-                    <p className="stock-value">-</p>
-                    <p className="selling-price">-</p>
-                  </div>
-                ) : (
-                  paginate(filtered, lowStockPage).map((item) => {
-                    const isCritical = (item.currentStock || 0) <= 2;
-                    const isLow = (item.currentStock || 0) <= 5 && (item.currentStock || 0) > 2;
-                    const key = item._id || item.itemId || item.itemId || item.id || item.itemId || item.name;
-                    return (
-                      <div className="item-info" key={key}>
-                        <p className="item" style={{
-                          fontWeight: 'bold',
-                          color: isCritical ? '#dc3545' : '#fd7e14'
-                        }}>
-                          {item.itemName || item.name || item.displayName || item.itemId}
-                        </p>
-                        <p className="cost-price">{formatCurrency(Number(item.costPrice) || Number(item.cost_price) || 0)}</p>
-                        <p className="selling-price">{formatCurrency(Number(item.sellingPrice) || Number(item.selling_price) || 0)}</p>
-                        <p className="quantity-available" style={{
-                          color: isCritical ? '#dc3545' : '#fd7e14',
-                          fontWeight: 'bold',
-                          fontSize: '1.1rem'
-                        }}>
-                          {item.currentStock || 0}
-                        </p>
-                        <p className="stock-value">
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '0.8rem',
-                            fontWeight: 'bold',
-                            backgroundColor: isCritical ? '#dc3545' : isLow ? '#fd7e14' : '#28a745',
-                            color: 'white'
-                          }}>
-                            {isCritical ? 'CRITICAL' : isLow ? 'LOW' : 'NORMAL'}
-                          </span>
-                        </p>
-                        <p className="selling-price">
-                          <button 
-                            onClick={() => navigate(`/inventory?focusItemId=${encodeURIComponent(item.itemId || item._id || item.id || '')}`)}
-                            style={{
-                              backgroundColor: '#007bff',
-                              border: 'none',
-                              padding: '8px 12px',
-                              color: 'white',
-                              fontSize: '0.9rem',
+              <>
+                <div style={{
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: '8px',
+                  backgroundColor: 'white'
+                }}>
+                  {lowStockLoading ? (
+                    <div style={{ padding: '1rem', textAlign: 'center' }}>Loading low stock items…</div>
+                  ) : filtered.length === 0 ? (
+                    <div className="item-info">
+                      <p className="item">All items well stocked</p>
+                      <p className="cost-price">-</p>
+                      <p className="selling-price">-</p>
+                      <p className="quantity-available">-</p>
+                      <p className="stock-value">-</p>
+                      <p className="selling-price">-</p>
+                    </div>
+                  ) : (
+                    filtered
+                      .slice((lowStockPage - 1) * itemsPerPage, lowStockPage * itemsPerPage)
+                      .map((item) => {
+                        const isCritical = (item.currentStock || 0) <= 2;
+                        const isLow = (item.currentStock || 0) <= 5 && (item.currentStock || 0) > 2;
+                        const key = item._id || item.itemId || item.itemId || item.id || item.itemId || item.name;
+                        return (
+                          <div className="item-info" key={key}>
+                            <p className="item" style={{
                               fontWeight: 'bold',
-                              fontFamily: 'Arial, sans-serif',
-                              borderRadius: '5px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = '#0056b3';
-                              e.target.style.transform = 'scale(1.05)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = '#007bff';
-                              e.target.style.transform = 'scale(1)';
-                            }}
-                          >
-                            Restock
-                          </button>
-                        </p>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                              color: isCritical ? '#dc3545' : '#fd7e14'
+                            }}>
+                              {item.itemName || item.name || item.displayName || item.itemId}
+                            </p>
+                            <p className="cost-price">{formatCurrency(Number(item.costPrice) || Number(item.cost_price) || 0)}</p>
+                            <p className="selling-price">{formatCurrency(Number(item.sellingPrice) || Number(item.selling_price) || 0)}</p>
+                            <p className="quantity-available" style={{
+                              color: isCritical ? '#dc3545' : '#fd7e14',
+                              fontWeight: 'bold',
+                              fontSize: '1.1rem'
+                            }}>
+                              {item.currentStock || 0}
+                            </p>
+                            <p className="stock-value">
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold',
+                                backgroundColor: isCritical ? '#dc3545' : isLow ? '#fd7e14' : '#28a745',
+                                color: 'white'
+                              }}>
+                                {isCritical ? 'CRITICAL' : isLow ? 'LOW' : 'NORMAL'}
+                              </span>
+                            </p>
+                            <p className="selling-price">
+                              <button 
+                                onClick={() => navigate(`/inventory?focusItemId=${encodeURIComponent(item.itemId || item._id || item.id || '')}`)}
+                                style={{
+                                  backgroundColor: '#007bff',
+                                  border: 'none',
+                                  padding: '8px 12px',
+                                  color: 'white',
+                                  fontSize: '0.9rem',
+                                  fontWeight: 'bold',
+                                  fontFamily: 'Arial, sans-serif',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.backgroundColor = '#0056b3';
+                                  e.target.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.backgroundColor = '#007bff';
+                                  e.target.style.transform = 'scale(1)';
+                                }}
+                              >
+                                Restock
+                              </button>
+                            </p>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+                {/* Pagination Controls for Low Stock (always render) */}
+                <PaginationControls 
+                  currentPage={lowStockPage}
+                  totalPages={totalPages}
+                  onPageChange={setLowStockPage}
+                />
+              </>
             );
           })()}
           
-          {/* Pagination Controls for Low Stock */}
-          {(() => {
-            // Compute the same filtered array as the low-stock rendering above
-            const itemsSource = Array.isArray(lowStockItems) ? lowStockItems : Object.entries(inventory).map(([k, v]) => ({ ...v, _id: v._id || v.id || k }));
-            const filteredForPagination = itemsSource.filter(item => (item.currentStock || 0) <= (item.reorderLevel || 5));
-
-            return (
-              <PaginationControls 
-                currentPage={lowStockPage}
-                totalPages={getTotalPages(filteredForPagination)}
-                onPageChange={setLowStockPage}
-              />
-            );
-          })()}
       </div>   
       </div> 
       </div>

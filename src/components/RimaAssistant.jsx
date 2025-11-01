@@ -53,7 +53,7 @@ const RimaAssistant = () => {
       const aiMessage = {
         id: Date.now() + 1,
         type: 'assistant',
-        text: `I received your question: "${messageText}"\n\nThis is a preview - once we connect the backend, I'll provide real data from your Blue Roof system! 🚀`,
+        text: `I received your question: "${messageText}"\n\nThis is a preview - once we connect the backend, I'll provide real data from your Blue Roof system!`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);

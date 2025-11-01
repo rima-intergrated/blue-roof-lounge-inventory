@@ -110,7 +110,7 @@ function RegisterNewStaff({ staff = [], setStaff }) {
   const [staffCurrentPage, setStaffCurrentPage] = useState(1);
   const [positionsCurrentPage, setPositionsCurrentPage] = useState(1);
   const [permissionsCurrentPage, setPermissionsCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Configurable items per page
+  const itemsPerPage = 10; // Configurable items per page
   
   const availableSections = [
     { id: "sales", name: "Sales & POS" },
@@ -629,9 +629,6 @@ function RegisterNewStaff({ staff = [], setStaff }) {
 
               {/* Scrollable container with max height */}
               <div style={{
-                maxHeight: '400px',
-                overflowY: 'auto',
-                overflowX: 'hidden',
                 border: '1px solid #e5e5e5',
                 borderRadius: '8px',
                 backgroundColor: 'white'

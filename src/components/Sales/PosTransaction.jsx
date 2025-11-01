@@ -76,11 +76,11 @@ function PosTransaction (props) {
 
   // Pagination states
   const [cashRecordsPage, setCashRecordsPage] = useState(1);
-  const [cashRecordsPerPage] = useState(10); // Items per page
+  const [cashRecordsPerPage] = useState(6); // Items per page
   const [totalCashRecords, setTotalCashRecords] = useState(0);
   const [allCashRecords, setAllCashRecords] = useState([]); // Store all records for pagination
   const [creditRecordsPage, setCreditRecordsPage] = useState(1);
-  const [creditRecordsPerPage] = useState(10); // Items per page for credit records
+  const [creditRecordsPerPage] = useState(6); // Items per page for credit records
   const [totalCreditRecords, setTotalCreditRecords] = useState(0);
   const [allCreditRecords, setAllCreditRecords] = useState([]); // Store all credit records for pagination
   const [expenseRecordsPage, setExpenseRecordsPage] = useState(1);
@@ -1723,19 +1723,19 @@ function PosTransaction (props) {
       )}
       <div className="sales-options">
         <div>
-          <button className="sales-btn" onClick={() => setViewMode('transaction')}>Record New Sale</button>
+          <button className="sales-btn" onClick={() => setViewMode('transaction')}>Record Sale</button>
         </div>
         <div>
-          <button className="sales-btn" onClick={() => setViewMode('cash-records')}>View Cash Sales</button>
+          <button className="sales-btn" onClick={() => setViewMode('cash-records')}>Cash Sales</button>
         </div>
         <div>
-          <button className="sales-btn" onClick={() => setViewMode('credit-records')}>View Credit Sales</button>
+          <button className="sales-btn" onClick={() => setViewMode('credit-records')}>Credit Sales</button>
         </div>
         <div>
-          <button className="sales-btn" onClick={() => setViewMode('new-expense')}>Record New Expense/Receipts</button>
+          <button className="sales-btn" onClick={() => setViewMode('new-expense')}>Record Expense/Receipt</button>
         </div>
         <div>
-          <button className="sales-btn" onClick={() => setViewMode('expense-records')}>View Expenses</button>
+          <button className="sales-btn" onClick={() => setViewMode('expense-records')}>Expenses</button>
         </div>
         <div>
           <button className="sales-btn" onClick={() => setViewMode('attachments')}>Attachments</button>
@@ -2012,45 +2012,37 @@ function PosTransaction (props) {
               <h2 className="item">Date</h2>
               <h2 className="item">Item</h2>
               <h2 className="item">Payment Mode</h2>
-              <h2 className="cost-price">Cost Price</h2>
-              <h2 className="selling-price">Selling Price</h2>
-              <h2 className="quantity-available">Qty Sold</h2>
-              <h2 className="sub-total">Total</h2>
-              <h2 className="item">Signatory</h2>
+              <h2 className="cost-price">Cost price</h2>  
+              <h2 className="selling-price">Selling price</h2>
+              <h2 className="quantity-available">Quantity Sold</h2>
+              <h2 className="sub-total">Sub Total</h2>
+              <h2 className="item">Signed By</h2>
             </div>
-            {cashRecords.length === 0 ? (
-              <div className="item-info">
-                <p className="item" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
-                  No cash sales found. Create a cash sale to see it here.
-                </p>
-              </div>
-            ) : (
-              cashRecords.map((product, index) => (
-                <div className="item-info" key={product.id || index}>
-                  <p className="item">{formatDate(product.dateSold)}</p>
-                  <p className="item" title={product.name}>{product.name}</p>
-                  <p className="item">
-                    <span style={{
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold',
-                      backgroundColor: product.paymentMode === 'Credit' ? '#d4edda' : 
-                                     product.paymentMode === 'Mobile Transfer' ? '#cce5ff' : '#f8f9fa',
-                      color: product.paymentMode === 'Credit' ? '#155724' : 
-                             product.paymentMode === 'Mobile Transfer' ? '#004085' : '#495057'
-                    }}>
-                      {product.paymentMode}
-                    </span>
-                  </p>
-                  <p className="cost-price">{formatCurrency(product.costPrice)}</p>
-                  <p className="selling-price">{formatCurrency(product.sellingPrice)}</p>
-                  <p className="quantity-available">{product.quantitySold}</p>
-                  <p className="sub-total">{formatCurrency((product.sellingPrice || 0) * (product.quantitySold || 0))}</p>
-                  <p className="item" title={getSignedByTooltip(product)}>{getSignedByDisplay(product)}</p>
-                </div>
-              ))
-            )}
+                {cashRecords.map((product, index) => (
+                  <div className="item-info" key={product.id || index}>
+                    <p className="item">{formatDate(product.dateSold)}</p>
+                    <p className="item" title={product.name}>{product.name}</p>
+                    <p className="item">
+                      <span style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        backgroundColor: product.paymentMode === 'Credit' ? '#d4edda' : 
+                                       product.paymentMode === 'Mobile Transfer' ? '#cce5ff' : '#f8f9fa',
+                        color: product.paymentMode === 'Credit' ? '#155724' : 
+                               product.paymentMode === 'Mobile Transfer' ? '#004085' : '#495057'
+                      }}>
+                        {product.paymentMode}
+                      </span>
+                    </p>
+                    <p className="cost-price">{formatCurrency(product.costPrice)}</p>
+                    <p className="selling-price">{formatCurrency(product.sellingPrice)}</p>
+                    <p className="quantity-available">{product.quantitySold}</p>
+                    <p className="sub-total">{formatCurrency((product.sellingPrice || 0) * (product.quantitySold || 0))}</p>
+                    <p className="item" title={getSignedByTooltip(product)}>{getSignedByDisplay(product)}</p>
+                  </div>
+                ))}
             {totalCashRecords > 0 && (
               <>
                 {/* Summary Section */}

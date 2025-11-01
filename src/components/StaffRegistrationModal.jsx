@@ -16,7 +16,7 @@ const StaffRegistrationModal = ({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(setupUrl);
-      setCopySuccess('✅ Copied!');
+      setCopySuccess('✓ Copied!');
       setTimeout(() => setCopySuccess(''), 2000);
     } catch (err) {
       // Fallback for older browsers
@@ -26,13 +26,13 @@ const StaffRegistrationModal = ({
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      setCopySuccess('✅ Copied!');
+      setCopySuccess('✓ Copied!');
       setTimeout(() => setCopySuccess(''), 2000);
     }
   };
 
   const handleShareWhatsApp = () => {
-    const message = `Hi ${staffName}! 👋\n\nYour Blue Roof Lounge staff account has been created successfully!\n\n🔐 Set up your password here:\n${setupUrl}\n\n📧 Use this email to login: ${email}\n\n⏰ Link expires in 24 hours\n\nWelcome to the team! 🎉`;
+    const message = `Hi ${staffName}!\n\nYour Blue Roof Lounge staff account has been created successfully!\n\nSet up your password here:\n${setupUrl}\n\nUse this email to login: ${email}\n\nLink expires in 24 hours\n\nWelcome to the team!`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -41,21 +41,21 @@ const StaffRegistrationModal = ({
     const subject = `Welcome to Blue Roof Lounge - Set Up Your Password`;
     const body = `Hi ${staffName},
 
-Welcome to Blue Roof Lounge! 🎉
+Welcome to Blue Roof Lounge!
 
 Your staff account has been created successfully. Please set up your password to access the system:
 
-🔐 Password Setup Link:
+Password Setup Link:
 ${setupUrl}
 
-📧 Login Email: ${email}
+Login Email: ${email}
 
-📋 Next Steps:
+Next Steps:
 1. Click the link above
 2. Create a strong password (minimum 8 characters)
 3. Login to the Blue Roof system
 
-⏰ Important: This link expires in 24 hours.
+Important: This link expires in 24 hours.
 
 If you have any questions, please contact your manager.
 
@@ -76,7 +76,7 @@ Blue Roof Lounge Team`;
     <div className="modal-overlay">
       <div className="staff-modal">
         <div className="modal-header">
-          <div className="success-icon">✅</div>
+          <div className="success-icon"><i className="fas fa-check-circle"></i></div>
           <h2>Staff Member Registered Successfully!</h2>
           <button className="close-button" onClick={onClose}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -88,25 +88,25 @@ Blue Roof Lounge Team`;
 
         <div className="modal-body">
           <div className="staff-info">
-            <h3>👤 {staffName}</h3>
-            <p className="email">📧 {email}</p>
+            <h3><i className="fas fa-user"></i> {staffName}</h3>
+            <p className="email"><i className="fas fa-envelope"></i> {email}</p>
           </div>
 
           {emailSent ? (
             <div className="email-status success">
-              <span className="status-icon">✅</span>
+              <span className="status-icon"><i className="fas fa-check-circle"></i></span>
               <p><strong>Email sent successfully!</strong> {staffName} should receive the password setup instructions shortly.</p>
             </div>
           ) : (
             <div className="email-status warning">
-              <span className="status-icon">⚠️</span>
+              <span className="status-icon"><i className="fas fa-exclamation-triangle"></i></span>
               <p><strong>Email notification failed to send automatically.</strong></p>
-              <p className="manual-action">🔗 <strong>Manual action required:</strong> Please share the password setup link below with {staffName}.</p>
+              <p className="manual-action"><i className="fas fa-link"></i> <strong>Manual action required:</strong> Please share the password setup link below with {staffName}.</p>
             </div>
           )}
 
           <div className="setup-url-section">
-            <label>🔐 Password Setup Link:</label>
+            <label><i className="fas fa-lock"></i> Password Setup Link:</label>
             <div className="url-container">
               <input 
                 type="text" 
@@ -119,38 +119,38 @@ Blue Roof Lounge Team`;
                 onClick={handleCopyLink}
                 title="Copy to clipboard"
               >
-                {copySuccess || '📋 Copy'}
+                {copySuccess || <><i className="fas fa-clipboard"></i> Copy</>}
               </button>
             </div>
           </div>
 
           <div className="share-section">
-            <h4>📤 Share via:</h4>
+            <h4><i className="fas fa-share"></i> Share via:</h4>
             <div className="share-buttons">
               <button className="share-btn whatsapp" onClick={handleShareWhatsApp}>
-                <span className="share-icon">📱</span>
+                <span className="share-icon"><i className="fab fa-whatsapp"></i></span>
                 WhatsApp
               </button>
               <button className="share-btn email" onClick={handleShareEmail}>
-                <span className="share-icon">📧</span>
+                <span className="share-icon"><i className="fas fa-envelope"></i></span>
                 Email
               </button>
               <button className="share-btn sms" onClick={handleShareSMS}>
-                <span className="share-icon">💬</span>
+                <span className="share-icon"><i className="fas fa-sms"></i></span>
                 SMS
               </button>
             </div>
           </div>
 
           <div className="instructions">
-            <h4>📝 Instructions for {staffName}:</h4>
+            <h4><i className="fas fa-edit"></i> Instructions for {staffName}:</h4>
             <ol>
               <li>Click the password setup link</li>
               <li>Create a strong password (minimum 8 characters)</li>
               <li>Use <strong>{email}</strong> as username to login</li>
               <li>Access the Blue Roof Lounge system</li>
             </ol>
-            <p className="expiry-notice">⏰ <strong>Important:</strong> Link expires in 24 hours</p>
+            <p className="expiry-notice"><i className="fas fa-clock"></i> <strong>Important:</strong> Link expires in 24 hours</p>
           </div>
         </div>
 

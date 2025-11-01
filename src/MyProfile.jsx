@@ -544,7 +544,7 @@ function MyProfile(props) {
                   fontSize: '0.8rem',
                   fontWeight: 'bold'
                 }}>
-                  ❌ {usedId}
+                  <i className="fas fa-times" style={{marginRight: '5px'}}></i> {usedId}
                 </span>
               ))}
             </div>
@@ -737,7 +737,7 @@ function MyProfile(props) {
                   fontSize: '0.8rem',
                   fontWeight: 'bold'
                 }}>
-                  ❌ {usedId}
+                  <i className="fas fa-times" style={{marginRight: '5px'}}></i> {usedId}
                 </span>
               ))}
             </div>

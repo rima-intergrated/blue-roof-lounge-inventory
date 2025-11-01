@@ -1,0 +1,317 @@
+/* ============================================
+   DESKTOP SIDEBAR NAVIGATION
+   ============================================ */
+
+/* Hide sidebar on mobile devices */
+.desktop-sidebar {
+  display: none;
+}
+
+/* Show sidebar only on desktop screens */
+@media (min-width: 769px) {
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; /* Start from top since header is hidden on desktop */
+    left: 0;
+    height: 100vh; /* Full viewport height */
+    background: linear-gradient(180deg, #185aca 0%, #103778 100%);
+    color: var(--text-on-brand, #ffffff);
+    transition: width 0.3s var(--transition-ease, cubic-bezier(0.4, 0, 0.2, 1));
+    z-index: 900; /* Below header but above content */
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  /* Expanded sidebar */
+  .desktop-sidebar.expanded {
+    width: 280px;
+  }
+
+  /* Collapsed sidebar */
+  .desktop-sidebar.collapsed {
+    width: 70px;
+  }
+
+  /* ============================================
+     SIDEBAR HEADER
+     ============================================ */
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 60px;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .sidebar-brand-icon {
+    font-size: 1.5rem;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .sidebar-brand-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.3s ease;
+  }
+
+  .collapsed .sidebar-brand-text {
+    opacity: 0;
+    width: 0;
+  }
+
+  .sidebar-toggle {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+  }
+
+  /* ============================================
+     SIDEBAR NAVIGATION
+     ============================================ */
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .sidebar-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sidebar-nav-item {
+    margin: 0;
+  }
+
+  .sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 1rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transform: translateX(4px);
+  }
+
+  .sidebar-nav-link.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .sidebar-nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #ffffff;
+  }
+
+  .sidebar-nav-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+  }
+
+  .sidebar-nav-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.3s ease;
+    flex: 1;
+    text-align: left;
+  }
+
+  .collapsed .sidebar-nav-text {
+    opacity: 0;
+    width: 0;
+  }
+
+  /* ============================================
+     SIDEBAR FOOTER
+     ============================================ */
+
+  .sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+  }
+
+  .sidebar-user-info {
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  .sidebar-user-details {
+    transition: opacity 0.3s ease;
+  }
+
+  .collapsed .sidebar-user-details {
+    opacity: 0;
+    height: 0;
+    margin: 0;
+  }
+
+  .sidebar-user-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #ffffff;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-user-role {
+    display: block;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-logout-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 0;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    gap: 12px;
+    border-radius: 6px;
+  }
+
+  .sidebar-logout-btn:hover {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff6b7a;
+    transform: translateX(4px);
+  }
+
+  /* ============================================
+     TOOLTIP FOR COLLAPSED STATE
+     ============================================ */
+
+  .collapsed .sidebar-nav-link,
+  .collapsed .sidebar-logout-btn {
+    position: relative;
+    justify-content: center;
+  }
+
+  .collapsed .sidebar-nav-link::after,
+  .collapsed .sidebar-logout-btn::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .collapsed .sidebar-nav-link:hover::after,
+  .collapsed .sidebar-logout-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ============================================
+     SMOOTH TRANSITIONS
+     ============================================ */
+
+  .sidebar-nav-link,
+  .sidebar-logout-btn,
+  .sidebar-toggle,
+  .sidebar-brand-text,
+  .sidebar-nav-text,
+  .sidebar-user-details {
+    transition: all 0.3s var(--transition-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  /* ============================================
+     RESPONSIVE ADJUSTMENTS
+     ============================================ */
+
+  /* Tablet landscape adjustments */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .desktop-sidebar.expanded {
+      width: 240px;
+    }
+  }
+
+  /* Large desktop adjustments */
+  @media (min-width: 1440px) {
+    .desktop-sidebar.expanded {
+      width: 300px;
+    }
+    
+    .sidebar-nav-link {
+      font-size: 1rem;
+      padding: 14px 1.25rem;
+    }
+    
+    .sidebar-nav-icon {
+      font-size: 1.2rem;
+    }
+  }
+}

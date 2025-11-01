@@ -191,7 +191,7 @@ function PasswordSetup() {
     <div className="password-setup-container">
       <div className="password-setup-card">
         <div className="header">
-          <h1>Welcome to Blue Roof Lounge! 🎉</h1>
+          <h1>Welcome to Blue Roof Lounge! <i className="fas fa-party-horn"></i></h1>
           {userInfo && (
             <div className="user-welcome">
               <h2>Hi {userInfo.name}!</h2>

@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import usePermissions from './hooks/usePermissions';
 import BlueRoofHeader from "./BlueRoofHeader.jsx";
+import DesktopSidebar from "./DesktopSidebar.jsx";
 import PosTransaction from "./components/Sales/PosTransaction.jsx";
 import AdvancePayment from "./AdvancePayment.jsx";
 import RegisterNewStaff from "./RegisterNewStaff.jsx";
@@ -17,6 +18,7 @@ import ConnectionStatus from './components/common/ConnectionStatus';
 import PermissionGuard from './components/common/PermissionGuard';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import RimaAssistant from './components/RimaAssistant';
+import './FontAwesome.css';
 
 // Component to determine the default route. Prefer the last-view saved in
 // localStorage (if valid and not a login/setup path). Otherwise fall back
@@ -68,95 +70,98 @@ const AppLayout = () => {
   useInitialCreditSales(setCreditRecords, setPaidCreditRecords);
 
   return (
-    <>
+    <div className="app-layout">
       <BlueRoofHeader user={user} onLogout={handleLogout} />
-      <RimaAssistant />
-      <Routes>
-        <Route path="/sales" element={
-          <PermissionGuard module="sales">
-            <div className="page-transition">
-              <PosTransaction 
-                expenses={expenses} 
-                drinks={drinks} 
-                creditRecords={creditRecords} 
-                setCreditRecords={setCreditRecords} 
-                paidCreditRecords={paidCreditRecords} 
-                setPaidCreditRecords={setPaidCreditRecords} 
-                inventory={inventory} 
-                setInventory={setInventory} 
-              />
+      <DesktopSidebar />
+      <main className="main-content">
+        <RimaAssistant />
+        <Routes>
+          <Route path="/sales" element={
+            <PermissionGuard module="sales">
+              <div className="page-transition">
+                <PosTransaction 
+                  expenses={expenses} 
+                  drinks={drinks} 
+                  creditRecords={creditRecords} 
+                  setCreditRecords={setCreditRecords} 
+                  paidCreditRecords={paidCreditRecords} 
+                  setPaidCreditRecords={setPaidCreditRecords} 
+                  inventory={inventory} 
+                  setInventory={setInventory} 
+                />
+              </div>
+            </PermissionGuard>
+          } />
+          <Route path="/hrm" element={
+            <PermissionGuard module="hrm">
+              <div className="page-transition">
+                <RegisterNewStaff 
+                  staff={staff} 
+                  setStaff={setStaff}
+                  onStaffAdded={() => {
+                    // Callback to refresh staff data if needed
+                    console.log('Staff member added successfully');
+                  }}
+                />
+              </div>
+            </PermissionGuard>
+          } />
+          <Route path="/payroll" element={
+            <PermissionGuard module="payroll">
+              <div className="page-transition">
+                <AdvancePayment 
+                  staff={staff} 
+                  pendingSalaries={pendingSalaries} 
+                  setPendingSalaries={setPendingSalaries} 
+                />
+              </div>
+            </PermissionGuard>
+          } />
+          <Route path="/settings" element={
+            <PermissionGuard module="settings">
+              <div className="page-transition">
+                <MyProfile token={localStorage.getItem('authToken')} user={user} onLogout={handleLogout} />
+              </div>
+            </PermissionGuard>
+          } />
+          <Route path="/inventory" element={
+            <PermissionGuard module="inventory">
+              <div className="page-transition">
+                <NewOrder 
+                  drinks={drinks} 
+                  inventory={inventory} 
+                  setInventory={setInventory} 
+                  suppliers={suppliers} 
+                  setSuppliers={setSuppliers} 
+                />
+              </div>
+            </PermissionGuard>
+          } />
+          <Route path="/reports" element={
+            <PermissionGuard module="reports">
+              <div className="page-transition">
+                <ReportsAnalytics 
+                  suppliers={suppliers} 
+                  setSuppliers={setSuppliers} 
+                  creditRecords={creditRecords} 
+                  paidCreditRecords={paidCreditRecords} 
+                  pendingSalaries={pendingSalaries} 
+                  inventory={inventory} 
+                />
+              </div>
+            </PermissionGuard>
+          } />
+          <Route path="/" element={<DefaultRouteRedirect />} />
+          <Route path="*" element={
+            <div className="page-transition" style={{padding:'2rem', textAlign: 'center'}}>
+              <h2>Page Not Found</h2>
+              <p>The page you're looking for doesn't exist.</p>
+              <p><a href="/sales" style={{color: '#007bff'}}>Go to Sales</a></p>
             </div>
-          </PermissionGuard>
-        } />
-        <Route path="/hrm" element={
-          <PermissionGuard module="hrm">
-            <div className="page-transition">
-              <RegisterNewStaff 
-                staff={staff} 
-                setStaff={setStaff}
-                onStaffAdded={() => {
-                  // Callback to refresh staff data if needed
-                  console.log('Staff member added successfully');
-                }}
-              />
-            </div>
-          </PermissionGuard>
-        } />
-        <Route path="/payroll" element={
-          <PermissionGuard module="payroll">
-            <div className="page-transition">
-              <AdvancePayment 
-                staff={staff} 
-                pendingSalaries={pendingSalaries} 
-                setPendingSalaries={setPendingSalaries} 
-              />
-            </div>
-          </PermissionGuard>
-        } />
-        <Route path="/settings" element={
-          <PermissionGuard module="settings">
-            <div className="page-transition">
-              <MyProfile token={localStorage.getItem('authToken')} user={user} onLogout={handleLogout} />
-            </div>
-          </PermissionGuard>
-        } />
-        <Route path="/inventory" element={
-          <PermissionGuard module="inventory">
-            <div className="page-transition">
-              <NewOrder 
-                drinks={drinks} 
-                inventory={inventory} 
-                setInventory={setInventory} 
-                suppliers={suppliers} 
-                setSuppliers={setSuppliers} 
-              />
-            </div>
-          </PermissionGuard>
-        } />
-        <Route path="/reports" element={
-          <PermissionGuard module="reports">
-            <div className="page-transition">
-              <ReportsAnalytics 
-                suppliers={suppliers} 
-                setSuppliers={setSuppliers} 
-                creditRecords={creditRecords} 
-                paidCreditRecords={paidCreditRecords} 
-                pendingSalaries={pendingSalaries} 
-                inventory={inventory} 
-              />
-            </div>
-          </PermissionGuard>
-        } />
-        <Route path="/" element={<DefaultRouteRedirect />} />
-        <Route path="*" element={
-          <div className="page-transition" style={{padding:'2rem', textAlign: 'center'}}>
-            <h2>Page Not Found</h2>
-            <p>The page you're looking for doesn't exist.</p>
-            <p><a href="/sales" style={{color: '#007bff'}}>Go to Sales</a></p>
-          </div>
-        } />
-      </Routes>
-    </>
+          } />
+        </Routes>
+      </main>
+    </div>
   );
 };
 
