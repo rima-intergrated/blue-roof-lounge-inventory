@@ -1,3 +1,36 @@
+@media (max-width: 600px) {
+  .sales-information {
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #fff;
+    border-radius: 8px;
+  }
+}
+.cash-sales-filters {
+  /* ...existing styles... */
+}
+@media (max-width: 600px) {
+  .cash-sales-filters {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    align-items: stretch;
+  }
+  .cash-sales-filters input[type="date"],
+  .cash-sales-filters input[type="text"] {
+    min-width: 0;
+    width: 100%;
+    font-size: 1.1rem;
+    padding: 0.7rem 1rem;
+  }
+  .cash-sales-filters button {
+    width: 100%;
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    padding: 0.7rem 1rem;
+  }
+}
 .salary-mini-container {
   padding-left: 24px;
   padding-right: 24px;
