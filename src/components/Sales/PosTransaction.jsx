@@ -4,7 +4,88 @@ import { attachmentAPI, stockAPI, categoryAPI, expenseAPI, expenseCategoryAPI, s
 import formatCurrency from '../../utils/formatCurrency';
 
 function PosTransaction (props) {
+  // Helper to render filtered cash records and summary
+  function renderFilteredCashRecords() {
+    const isFiltered = !!(cashSalesFilterDate || cashSalesFilterItem || cashSalesFilterSignedBy);
+    const filteredCashRecords = allCashRecords.filter(product => {
+      // Date filter
+      if (cashSalesFilterDate && product.dateSold) {
+        const prodDate = new Date(product.dateSold).toISOString().slice(0, 10);
+        if (prodDate !== cashSalesFilterDate) return false;
+      }
+      // Item filter
+      if (cashSalesFilterItem && product.name) {
+        if (!product.name.toLowerCase().includes(cashSalesFilterItem.toLowerCase())) return false;
+      }
+      // Signed By filter
+      if (cashSalesFilterSignedBy && getSignedByDisplay(product)) {
+        if (!getSignedByDisplay(product).toLowerCase().includes(cashSalesFilterSignedBy.toLowerCase())) return false;
+      }
+      return true;
+    });
+
+  // Use all records if not filtered
+  const recordsToShow = isFiltered ? filteredCashRecords : allCashRecords;
+  const totalToShow = recordsToShow.length;
+  const startIdx = (cashRecordsPage - 1) * cashRecordsPerPage;
+  const endIdx = Math.min(cashRecordsPage * cashRecordsPerPage, totalToShow);
+  const paginatedRecords = recordsToShow.slice(startIdx, endIdx);
+
+    // Render filtered and paginated records
+    const recordRows = paginatedRecords.map((product, index) => (
+      <div className="item-info" key={product.id || index}>
+        <p className="item">{formatDate(product.dateSold)}</p>
+        <p className="item" title={product.name}>{product.name}</p>
+        <p className="item">
+          <span style={{
+            padding: '0.2rem 0.5rem',
+            borderRadius: '4px',
+            fontSize: '0.8rem',
+            fontWeight: 'bold',
+            backgroundColor: product.paymentMode === 'Credit' ? '#d4edda' : 
+                           product.paymentMode === 'Mobile Transfer' ? '#cce5ff' : '#f8f9fa',
+            color: product.paymentMode === 'Credit' ? '#155724' : 
+                   product.paymentMode === 'Mobile Transfer' ? '#004085' : '#495057'
+          }}>
+            {product.paymentMode}
+          </span>
+        </p>
+        <p className="cost-price">{formatCurrency(product.costPrice)}</p>
+        <p className="selling-price">{formatCurrency(product.sellingPrice)}</p>
+        <p className="quantity-available">{product.quantitySold}</p>
+        <p className="sub-total">{formatCurrency((product.sellingPrice || 0) * (product.quantitySold || 0))}</p>
+        <p className="item" title={getSignedByTooltip(product)}>{getSignedByDisplay(product)}</p>
+      </div>
+    ));
+
+    // Summary section
+    return (
+      <>
+        {recordRows}
+        {/* Summary Section */}
+        <div style={{ 
+          gridColumn: '1 / -1', 
+          borderTop: '2px solid #007bff', 
+          padding: '1rem', 
+          marginTop: '1rem',
+          backgroundColor: '#f8f9fa',
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontWeight: 'bold'
+        }}>
+          <span>
+            Showing {totalToShow === 0 ? 0 : (startIdx + 1)}-{endIdx} of {totalToShow} transactions
+          </span>
+          <span>Total Amount: {formatCurrency(recordsToShow.reduce((sum, record) => sum + ((record.sellingPrice || 0) * (record.quantitySold || 0)), 0))}</span>
+        </div>
+      </>
+    );
+  }
   // Helper: normalize attachment objects from various shapes the backend may return
+  // Cash sales sheet filter states
+  const [cashSalesFilterDate, setCashSalesFilterDate] = useState('');
+  const [cashSalesFilterItem, setCashSalesFilterItem] = useState('');
+  const [cashSalesFilterSignedBy, setCashSalesFilterSignedBy] = useState('');
   const normalizeAttachment = (a) => {
     if (!a) return null;
     const id = a._id || a.id || (a.fileName && null);
@@ -2007,60 +2088,49 @@ function PosTransaction (props) {
               🔄 Refresh
             </button> */}
           </div>
+          {/* Filters for cash sales sheet */}
+          <div className="cash-sales-filters">
+            <input
+              type="date"
+              value={cashSalesFilterDate || ''}
+              onChange={e => setCashSalesFilterDate(e.target.value)}
+              placeholder="Filter by Date"
+            />
+            <input
+              type="text"
+              value={cashSalesFilterItem || ''}
+              onChange={e => setCashSalesFilterItem(e.target.value)}
+              placeholder="Filter by Item"
+            />
+            <input
+              type="text"
+              value={cashSalesFilterSignedBy || ''}
+              onChange={e => setCashSalesFilterSignedBy(e.target.value)}
+              placeholder="Filter by Signed By"
+            />
+            <button
+              onClick={() => {
+                setCashSalesFilterDate('');
+                setCashSalesFilterItem('');
+                setCashSalesFilterSignedBy('');
+              }}
+              style={{ padding: '0.5rem 1rem', borderRadius: '7px', border: '1px solid #d1d5db', backgroundColor: '#f6f8fa', color: '#185aca', cursor: 'pointer', fontWeight: 500, fontSize: '1rem' }}
+            >
+              Clear
+            </button>
+          </div>
           <div className="sales-information">
             <div className="sales-items">
               <h2 className="item">Date</h2>
               <h2 className="item">Item</h2>
               <h2 className="item">Payment Mode</h2>
-              <h2 className="cost-price">Cost price</h2>  
+              <h2 className="cost-price">Cost price</h2>
               <h2 className="selling-price">Selling price</h2>
               <h2 className="quantity-available">Quantity Sold</h2>
               <h2 className="sub-total">Sub Total</h2>
               <h2 className="item">Signed By</h2>
             </div>
-                {cashRecords.map((product, index) => (
-                  <div className="item-info" key={product.id || index}>
-                    <p className="item">{formatDate(product.dateSold)}</p>
-                    <p className="item" title={product.name}>{product.name}</p>
-                    <p className="item">
-                      <span style={{
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.8rem',
-                        fontWeight: 'bold',
-                        backgroundColor: product.paymentMode === 'Credit' ? '#d4edda' : 
-                                       product.paymentMode === 'Mobile Transfer' ? '#cce5ff' : '#f8f9fa',
-                        color: product.paymentMode === 'Credit' ? '#155724' : 
-                               product.paymentMode === 'Mobile Transfer' ? '#004085' : '#495057'
-                      }}>
-                        {product.paymentMode}
-                      </span>
-                    </p>
-                    <p className="cost-price">{formatCurrency(product.costPrice)}</p>
-                    <p className="selling-price">{formatCurrency(product.sellingPrice)}</p>
-                    <p className="quantity-available">{product.quantitySold}</p>
-                    <p className="sub-total">{formatCurrency((product.sellingPrice || 0) * (product.quantitySold || 0))}</p>
-                    <p className="item" title={getSignedByTooltip(product)}>{getSignedByDisplay(product)}</p>
-                  </div>
-                ))}
-            {totalCashRecords > 0 && (
-              <>
-                {/* Summary Section */}
-                <div style={{ 
-                  gridColumn: '1 / -1', 
-                  borderTop: '2px solid #007bff', 
-                  padding: '1rem', 
-                  marginTop: '1rem',
-                  backgroundColor: '#f8f9fa',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontWeight: 'bold'
-                }}>
-                  <span>
-                    Showing {((cashRecordsPage - 1) * cashRecordsPerPage) + 1}-{Math.min(cashRecordsPage * cashRecordsPerPage, totalCashRecords)} of {totalCashRecords} transactions
-                  </span>
-                  <span>Total Amount: {formatCurrency(allCashRecords.reduce((sum, record) => sum + ((record.sellingPrice || 0) * (record.quantitySold || 0)), 0))}</span>
-                </div>
+            {renderFilteredCashRecords()}
                 
                 {/* Pagination Controls */}
                 {Math.ceil(totalCashRecords / cashRecordsPerPage) > 1 && (
@@ -2109,8 +2179,6 @@ function PosTransaction (props) {
                     </button>
                   </div>
                 )}
-              </>
-            )}
           </div>
         </div>
       )}

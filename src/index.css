@@ -224,6 +224,51 @@ textarea:focus {
   outline-offset: 2px;
 }
 
+/* Cash Sales Sheet Filters Styling */
+
+.cash-sales-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+  background: #f6f8fa;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(16, 55, 120, 0.04);
+  padding: 0.75rem 1rem;
+  align-items: center;
+  border: 1px solid #e3e8ee;
+}
+.cash-sales-filters input[type="date"],
+.cash-sales-filters input[type="text"] {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 1rem;
+  background: #fff;
+  color: #1a2a3a;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  box-shadow: none;
+  min-width: 130px;
+  outline: none;
+}
+.cash-sales-filters input[type="date"]::placeholder,
+.cash-sales-filters input[type="text"]::placeholder {
+  color: #b0b8c1;
+  opacity: 1;
+}
+.cash-sales-filters input[type="date"]:focus,
+.cash-sales-filters input[type="text"]:focus {
+  border-color: #185aca;
+  box-shadow: 0 0 0 2px rgba(24, 90, 202, 0.10);
+}
+.cash-sales-filters label {
+  font-weight: 500;
+  color: #185aca;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
 /* Mobile-Optimized Text Sizes */
 @media (max-width: 768px) {
   h1 { font-size: 1.75rem; }
