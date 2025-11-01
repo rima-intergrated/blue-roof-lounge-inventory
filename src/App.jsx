@@ -41,11 +41,8 @@ const DefaultRouteRedirect = () => {
   const { getAccessibleModules } = usePermissions();
   const accessibleModules = getAccessibleModules();
   // Priority order for default route
-  const routePriority = ['sales', 'inventory', 'hrm', 'payroll', 'reports', 'settings'];
-  const defaultModule = routePriority.find(module => accessibleModules.includes(module));
-  const redirectTo = defaultModule || (accessibleModules.length > 0 ? accessibleModules[0] : 'sales');
-  const validPath = redirectTo.startsWith('/') ? redirectTo : `/${redirectTo}`;
-  return <Navigate to={validPath} replace />;
+  // Always redirect to login if no lastViewPath
+  return <Navigate to="/login" replace />;
 };
 
 // Main App Layout Component
