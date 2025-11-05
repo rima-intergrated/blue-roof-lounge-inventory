@@ -734,29 +734,37 @@ function NewOrder (props) {
 
     // Restrict delete to testuser123 only
     if (user.username !== 'testuser123') {
-      alert('You do not have permission to delete stock items.');
+      alert('You do not have permission to clear stock records.');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to clear the stock for "${selectedStock.itemName}"? This will reset the current stock to 0.`;
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
-      const response = await stockAPI.delete(selectedStock._id || selectedStock.itemId);
+      // Use itemId instead of _id for the delete endpoint
+      const itemId = selectedStock.itemId || selectedStock._id;
+      const response = await stockAPI.delete(itemId);
+      
       if (response && response.success) {
         // Remove from local inventory state
         setInventory(prev => {
           const updated = { ...prev };
-          delete updated[selectedStock.itemId];
+          delete updated[itemId];
           return updated;
         });
         
         // Show success message
-        alert('Stock item deleted successfully');
+        alert('Stock record cleared successfully');
         closeStockModal();
       } else {
-        throw new Error(response?.message || 'Failed to delete stock item');
+        throw new Error(response?.message || 'Failed to clear stock record');
       }
     } catch (error) {
-      console.error('❌ Failed to delete stock item:', error);
-      alert('Failed to delete stock item: ' + (error.message || error));
+      console.error('❌ Failed to clear stock record:', error);
+      alert('Failed to clear stock record: ' + (error.message || error));
     }
   }
 
@@ -1882,6 +1890,11 @@ function NewOrder (props) {
                 <div><strong>Projected Profit:</strong> {formatCurrency(((selectedStock.sellingPrice || 0) - (selectedStock.costPrice || 0)) * (selectedStock.currentStock || 0))}</div>
                 <div><strong>Last Updated:</strong> {selectedStock.updatedAt ? new Date(selectedStock.updatedAt).toLocaleDateString() : 'N/A'}</div>
               </div>
+              {user && user.username === 'testuser123' && (
+                <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px', fontSize: '0.85rem' }}>
+                  <strong>Admin Action:</strong> Clear Stock will remove this item's stock record and reset current stock to 0.
+                </div>
+              )}
             </div>
             
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -1904,7 +1917,7 @@ function NewOrder (props) {
                   onClick={handleDeleteStock}
                   style={{
                     padding: '0.75rem 1.5rem',
-                    backgroundColor: '#dc3545',
+                    backgroundColor: '#fd7e14',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
@@ -1912,13 +1925,13 @@ function NewOrder (props) {
                     fontSize: '0.9rem'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#c82333';
+                    e.target.style.backgroundColor = '#e8590c';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#dc3545';
+                    e.target.style.backgroundColor = '#fd7e14';
                   }}
                 >
-                  Delete Stock Item
+                  Clear Stock Record
                 </button>
               )}
             </div>
