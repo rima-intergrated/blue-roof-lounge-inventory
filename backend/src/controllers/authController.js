@@ -325,7 +325,8 @@ const getUserPermissions = async (req, res) => {
       message: 'User permissions retrieved successfully',
       data: {
         permissions: user.staffId.position.permissions || {},
-        positionTitle: user.staffId.position.positionTitle
+        positionTitle: user.staffId.position.positionTitle,
+        staffName: user.staffId.name
       }
     });
 

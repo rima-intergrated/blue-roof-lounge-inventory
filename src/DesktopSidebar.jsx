@@ -153,8 +153,8 @@ const DesktopSidebar = () => {
           <div className="sidebar-user-info">
             {!isCollapsed && (
               <div className="sidebar-user-details">
-                <span className="sidebar-user-name">{user.name || user.firstName}</span>
-                <span className="sidebar-user-role">{user.role || 'Staff'}</span>
+                <span className="sidebar-user-name">{user.name || user.firstName || user.username}</span>
+                <span className="sidebar-user-role">{user.positionTitle || user.role || 'Staff'}</span>
               </div>
             )}
           </div>

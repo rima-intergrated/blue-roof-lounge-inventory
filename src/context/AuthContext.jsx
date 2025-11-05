@@ -31,10 +31,12 @@ export const AuthProvider = ({ children }) => {
         // Load cached permissions immediately to prevent blank page
         const cachedPermissions = localStorage.getItem('userPermissions');
         const cachedPositionTitle = localStorage.getItem('userPositionTitle');
+        const cachedStaffName = localStorage.getItem('userStaffName');
         if (cachedPermissions) {
           try {
             userData.permissions = JSON.parse(cachedPermissions);
             userData.positionTitle = cachedPositionTitle;
+            userData.name = cachedStaffName || userData.name;
           } catch (parseError) {
             console.warn('Failed to parse cached permissions:', parseError);
           }
@@ -49,10 +51,12 @@ export const AuthProvider = ({ children }) => {
             const permissionsData = await authAPI.getPermissions();
             userData.permissions = permissionsData.data.permissions;
             userData.positionTitle = permissionsData.data.positionTitle;
+            userData.name = permissionsData.data.staffName || userData.name;
             
-            // Cache the fresh permissions
+            // Cache the fresh permissions and staff data
             localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
             localStorage.setItem('userPositionTitle', userData.positionTitle || '');
+            localStorage.setItem('userStaffName', userData.name || '');
             
             // Update user with fresh permissions
             setUser({...userData});
@@ -95,10 +99,12 @@ export const AuthProvider = ({ children }) => {
             const permissionsData = await authAPI.getPermissions();
             userData.permissions = permissionsData.data.permissions;
             userData.positionTitle = permissionsData.data.positionTitle;
+            userData.name = permissionsData.data.staffName || userData.name;
             
-            // Cache permissions for reload persistence
+            // Cache permissions and staff data for reload persistence
             localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
             localStorage.setItem('userPositionTitle', userData.positionTitle || '');
+            localStorage.setItem('userStaffName', userData.name || '');
           } catch (permError) {
             console.warn('Failed to fetch permissions:', permError);
           }
