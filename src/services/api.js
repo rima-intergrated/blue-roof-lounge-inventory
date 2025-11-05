@@ -210,6 +210,12 @@ export const staffAPI = {
       body: JSON.stringify(positionData),
     });
   },
+
+  deletePosition: async (positionId) => {
+    return apiRequest(`/staff/positions/${positionId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Position API (alias for staff position methods)
@@ -217,6 +223,7 @@ export const positionAPI = {
   getAll: staffAPI.getPositions,
   create: staffAPI.createPosition,
   update: staffAPI.updatePosition,
+  delete: staffAPI.deletePosition,
 };
 
 // Sales API

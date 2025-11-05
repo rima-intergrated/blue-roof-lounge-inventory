@@ -270,6 +270,47 @@ router.post('/positions/fix-inventory', async (req, res) => {
   }
 });
 
+// Delete position
+router.delete('/positions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('🗑️ Attempting to delete position:', id);
+    
+    // Find and delete the position
+    const deletedPosition = await Position.findByIdAndDelete(id);
+    
+    if (!deletedPosition) {
+      return res.status(404).json({
+        success: false,
+        message: 'Position not found'
+      });
+    }
+    
+    console.log('✅ Position deleted successfully:', deletedPosition.positionTitle);
+    
+    res.json({
+      success: true,
+      message: 'Position deleted successfully',
+      data: {
+        deletedPosition: {
+          id: deletedPosition._id,
+          positionTitle: deletedPosition.positionTitle,
+          positionCode: deletedPosition.positionCode
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error deleting position:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting position',
+      error: error.message
+    });
+  }
+});
+
 // Staff routes  
 router.get('/stats', getStaffStats);
 router.get('/', getAllStaff);

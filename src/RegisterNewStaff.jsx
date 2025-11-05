@@ -353,9 +353,32 @@ function RegisterNewStaff({ staff = [], setStaff }) {
     }
   };
 
-  function handleDeletePosition(positionId) {
-    if (positions.length > 1) { // Prevent deleting all positions
-      setPositions(p => p.filter(pos => (pos._id || pos.positionCode) !== positionId));
+  async function handleDeletePosition(positionId) {
+    if (positions.length <= 1) {
+      setError('Cannot delete the last position. At least one position must exist.');
+      return;
+    }
+
+    try {
+      setFormLoading(true);
+      clearError();
+      
+      console.log('🗑️ Deleting position:', positionId);
+      const response = await positionAPI.delete(positionId);
+      
+      if (response.success) {
+        // Remove from local state only after successful API call
+        setPositions(p => p.filter(pos => (pos._id || pos.positionCode) !== positionId));
+        setSuccessMessage(`Position "${response.data.deletedPosition.positionTitle}" deleted successfully!`);
+        console.log('✅ Position deleted successfully');
+      } else {
+        throw new Error(response.message || 'Failed to delete position');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting position:', error);
+      setError(error.message || 'Failed to delete position');
+    } finally {
+      setFormLoading(false);
     }
   }
 
