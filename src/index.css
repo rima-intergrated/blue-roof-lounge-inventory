@@ -7,9 +7,7 @@
     border-radius: 8px;
   }
 }
-.cash-sales-filters {
-  /* ...existing styles... */
-}
+/* .cash-sales-filters styles go here if needed */
 @media (max-width: 600px) {
   .cash-sales-filters {
     flex-direction: column;
