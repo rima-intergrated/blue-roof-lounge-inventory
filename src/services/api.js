@@ -2,11 +2,11 @@
 // Use VITE_API_URL as-is, no forced '/api' suffix
 // CRITICAL: Must be set in Vercel environment variables as VITE_API_URL
 const VITE_API_URL_VALUE = import.meta.env.VITE_API_URL;
-const FALLBACK_URL = 'http://localhost:5000';
+const FALLBACK_URL = 'http://localhost:5000/api';
 const PROD_BACKEND_URL = 'https://blue-roof-lounge-backend.onrender.com/api';
 
 // If VITE_API_URL is empty string, treat it as not set
-let API_BASE_URL = (VITE_API_URL_VALUE && VITE_API_URL_VALUE.trim()) ? VITE_API_URL_VALUE.trim() : FALLBACK_URL;
+let API_BASE_URL = (VITE_API_URL_VALUE && VITE_API_URL_VALUE.trim()) ? VITE_API_URL_VALUE.trim() : PROD_BACKEND_URL;
 
 // EMERGENCY FIX: If deployed (production OR on Vercel domain) and still using localhost, force the correct URL
 const isDeployed = import.meta.env.MODE === 'production' || 

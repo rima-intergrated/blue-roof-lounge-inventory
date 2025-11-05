@@ -59,9 +59,16 @@ function RegisterNewStaff({ staff = [], setStaff }) {
   const loadPositions = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading positions from API...');
       const response = await positionAPI.getAll();
+      console.log('📋 Positions API response:', response);
       if (response.success) {
-        setPositions(response.data.positions || []);
+        const positionsArray = response.data.positions || [];
+        console.log('✅ Positions loaded successfully:', positionsArray.length, 'positions');
+        setPositions(positionsArray);
+      } else {
+        console.error('❌ Failed to load positions:', response.message);
+        setError('Failed to load positions: ' + (response.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error loading positions:', error);
@@ -307,28 +314,36 @@ function RegisterNewStaff({ staff = [], setStaff }) {
     clearError();
     
     try {
-      const positionData = {
+      // Create position with the most basic structure, then try to update it
+      const basicPositionData = {
         positionTitle: newPositionName.trim(),
         positionCode: newPositionName.trim().toUpperCase().replace(/\s+/g, '_'),
         permissions: {
-          sales: {},
-          inventory: {},
-          hrm: {},
-          payroll: {},
-          reports: {},
-          settings: {}
+          sales: { view: false, create: false, edit: false, delete: false, add: false },
+          inventory: { view: false, create: false, edit: false, delete: false, add: false },
+          hrm: { view: false, create: false, edit: false, delete: false, add: false },
+          payroll: { view: false, create: false, edit: false, delete: false, process: false, approve: false },
+          reports: { view: false, create: false, edit: false, delete: false, generate: false, export: false },
+          settings: { view: false, create: false, edit: false, delete: false, systemConfig: false }
         }
       };
 
-      const response = await positionAPI.create(positionData);
+      console.log('🏗️ Creating position with basic data:', basicPositionData);
+      const createResponse = await positionAPI.create(basicPositionData);
+      console.log('🏗️ Position creation response:', createResponse);
       
-      if (response.success) {
-        // Refresh positions list
-        await loadPositions();
+      if (createResponse.success) {
+        const positionName = newPositionName.trim();
         setNewPositionName("");
-        setSuccessMessage(`Position "${newPositionName.trim()}" created successfully!`);
+        setSuccessMessage(`Position "${positionName}" created successfully! Checking if visible in list...`);
+        
+        // Refresh positions to see if it appears with the basic structure
+        setTimeout(async () => {
+          await loadPositions();
+          console.log('🔍 Positions reloaded after creation');
+        }, 1000);
       } else {
-        throw new Error(response.message || 'Failed to create position');
+        throw new Error(createResponse.message || 'Failed to create position');
       }
     } catch (error) {
       console.error('Error creating position:', error);
@@ -702,7 +717,11 @@ function RegisterNewStaff({ staff = [], setStaff }) {
       {viewMode === 'create-position' && (
         <div className="staff-register-container">
           <div className="registration-options">          
-            <h2 className="my-profile-button" style={{ fontFamily: 'Arial, sans-serif' }}>Create New Position</h2>          
+            <h2 className="my-profile-button" style={{ fontFamily: 'Arial, sans-serif' }}>Create New Position</h2>
+            <p style={{ fontSize: '14px', color: '#FF9800', marginTop: '10px', textAlign: 'center' }}>
+              ⚠️ Note: Due to backend schema limitations, newly created positions may not appear in the list. 
+              We are working on updating the backend to support full position data.
+            </p>          
           </div>
 
           <input 
