@@ -10,6 +10,7 @@ function NewOrder (props) {
   // State for stock modal
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
+  const [clearQuantity, setClearQuantity] = useState('');
   
   const location = useLocation();
   // Fetch all stocks for stocksheet on mount
@@ -727,6 +728,7 @@ function NewOrder (props) {
   function closeStockModal() {
     setShowStockModal(false);
     setSelectedStock(null);
+    setClearQuantity('');
   }
 
   async function handleDeleteStock() {
@@ -738,33 +740,58 @@ function NewOrder (props) {
       return;
     }
 
-    const confirmMessage = `Are you sure you want to clear the stock for "${selectedStock.itemName}"? This will reset the current stock to 0.`;
+    // Validate clear quantity
+    const clearQty = Number(clearQuantity);
+    if (!clearQuantity || clearQty <= 0) {
+      alert('Please enter a valid quantity to clear (greater than 0).');
+      return;
+    }
+
+    const currentStock = Number(selectedStock.currentStock || 0);
+    if (clearQty > currentStock) {
+      alert(`Cannot clear ${clearQty} items. Only ${currentStock} available in stock.`);
+      return;
+    }
+
+    const newStockLevel = currentStock - clearQty;
+    const confirmMessage = `Clear ${clearQty} units of "${selectedStock.itemName}"?\n\nCurrent Stock: ${currentStock}\nAfter Clearing: ${newStockLevel}\n\nThis action represents damaged, stolen, or expired items being removed from inventory.`;
+    
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
-      // Use itemId instead of _id for the delete endpoint
+      // Update stock using the update endpoint instead of delete
       const itemId = selectedStock.itemId || selectedStock._id;
-      const response = await stockAPI.delete(itemId);
+      const updatedStockData = {
+        ...selectedStock,
+        currentStock: newStockLevel,
+        lastStockUpdate: new Date().toISOString(),
+        stockUpdateReason: `Cleared ${clearQty} units - Admin adjustment`
+      };
+
+      const response = await stockAPI.update(itemId, updatedStockData);
       
       if (response && response.success) {
-        // Remove from local inventory state
-        setInventory(prev => {
-          const updated = { ...prev };
-          delete updated[itemId];
-          return updated;
-        });
+        // Update local inventory state
+        setInventory(prev => ({
+          ...prev,
+          [itemId]: {
+            ...prev[itemId],
+            currentStock: newStockLevel,
+            lastStockUpdate: new Date().toISOString()
+          }
+        }));
         
         // Show success message
-        alert('Stock record cleared successfully');
+        alert(`Successfully cleared ${clearQty} units. New stock level: ${newStockLevel}`);
         closeStockModal();
       } else {
-        throw new Error(response?.message || 'Failed to clear stock record');
+        throw new Error(response?.message || 'Failed to update stock level');
       }
     } catch (error) {
-      console.error('❌ Failed to clear stock record:', error);
-      alert('Failed to clear stock record: ' + (error.message || error));
+      console.error('❌ Failed to clear stock:', error);
+      alert('Failed to clear stock: ' + (error.message || error));
     }
   }
 
@@ -1891,8 +1918,39 @@ function NewOrder (props) {
                 <div><strong>Last Updated:</strong> {selectedStock.updatedAt ? new Date(selectedStock.updatedAt).toLocaleDateString() : 'N/A'}</div>
               </div>
               {user && user.username === 'testuser123' && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px', fontSize: '0.85rem' }}>
-                  <strong>Admin Action:</strong> Clear Stock will remove this item's stock record and reset current stock to 0.
+                <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '6px' }}>
+                  <div style={{ marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 'bold', color: '#856404' }}>
+                    Admin Stock Adjustment
+                  </div>
+                  <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: '#856404' }}>
+                    Use this to remove damaged, stolen, expired, or missing items from inventory.
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    <label style={{ fontSize: '0.9rem', fontWeight: '500', color: '#856404', minWidth: '120px' }}>
+                      Quantity to Clear:
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={selectedStock.currentStock || 0}
+                      value={clearQuantity}
+                      onChange={(e) => setClearQuantity(e.target.value)}
+                      placeholder="Enter quantity"
+                      style={{
+                        padding: '0.5rem',
+                        border: '1px solid #ffeaa7',
+                        borderRadius: '4px',
+                        width: '120px',
+                        fontSize: '0.9rem'
+                      }}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: '#856404' }}>
+                      (Max: {selectedStock.currentStock || 0})
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#856404', fontStyle: 'italic' }}>
+                    New stock level will be: {(selectedStock.currentStock || 0) - (Number(clearQuantity) || 0)} units
+                  </div>
                 </div>
               )}
             </div>
@@ -1915,23 +1973,29 @@ function NewOrder (props) {
               {user && user.username === 'testuser123' && (
                 <button
                   onClick={handleDeleteStock}
+                  disabled={!clearQuantity || Number(clearQuantity) <= 0 || Number(clearQuantity) > (selectedStock.currentStock || 0)}
                   style={{
                     padding: '0.75rem 1.5rem',
-                    backgroundColor: '#fd7e14',
+                    backgroundColor: (!clearQuantity || Number(clearQuantity) <= 0 || Number(clearQuantity) > (selectedStock.currentStock || 0)) ? '#6c757d' : '#fd7e14',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem'
+                    cursor: (!clearQuantity || Number(clearQuantity) <= 0 || Number(clearQuantity) > (selectedStock.currentStock || 0)) ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem',
+                    opacity: (!clearQuantity || Number(clearQuantity) <= 0 || Number(clearQuantity) > (selectedStock.currentStock || 0)) ? 0.6 : 1
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#e8590c';
+                    if (!e.target.disabled) {
+                      e.target.style.backgroundColor = '#e8590c';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#fd7e14';
+                    if (!e.target.disabled) {
+                      e.target.style.backgroundColor = '#fd7e14';
+                    }
                   }}
                 >
-                  Clear Stock Record
+                  Clear {clearQuantity || '?'} Units
                 </button>
               )}
             </div>
