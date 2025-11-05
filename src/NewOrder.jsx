@@ -2,7 +2,15 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL, stockAPI } from './services/api';
 import formatCurrency from "./utils/formatCurrency";
 import { useLocation } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 function NewOrder (props) {
+  // User authentication context
+  const { user } = useAuth();
+  
+  // State for stock modal
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [selectedStock, setSelectedStock] = useState(null);
+  
   const location = useLocation();
   // Fetch all stocks for stocksheet on mount
   useEffect(() => {
@@ -715,6 +723,43 @@ function NewOrder (props) {
     return attachments;
   }
 
+  // Stock modal functions
+  function closeStockModal() {
+    setShowStockModal(false);
+    setSelectedStock(null);
+  }
+
+  async function handleDeleteStock() {
+    if (!selectedStock || !user) return;
+
+    // Restrict delete to testuser123 only
+    if (user.username !== 'testuser123') {
+      alert('You do not have permission to delete stock items.');
+      return;
+    }
+
+    try {
+      const response = await stockAPI.delete(selectedStock._id || selectedStock.itemId);
+      if (response && response.success) {
+        // Remove from local inventory state
+        setInventory(prev => {
+          const updated = { ...prev };
+          delete updated[selectedStock.itemId];
+          return updated;
+        });
+        
+        // Show success message
+        alert('Stock item deleted successfully');
+        closeStockModal();
+      } else {
+        throw new Error(response?.message || 'Failed to delete stock item');
+      }
+    } catch (error) {
+      console.error('❌ Failed to delete stock item:', error);
+      alert('Failed to delete stock item: ' + (error.message || error));
+    }
+  }
+
   return (
       <div className="order-container">
         {showPopup && (
@@ -1166,7 +1211,15 @@ function NewOrder (props) {
                         : (inventoryItem.lastStockUpdate ? new Date(inventoryItem.lastStockUpdate).toLocaleDateString() : 'N/A');
 
                       return (
-                        <div className="item-info" key={itemId}>
+                        <div 
+                          className="item-info" 
+                          key={itemId}
+                          onClick={() => {
+                            setSelectedStock(inventoryItem);
+                            setShowStockModal(true);
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <p className="item">{itemId}</p>
                           <p className="item">{inventoryItem.itemName}</p>
                           <p className="cost-price">{avgCostPrice}</p>
@@ -1769,6 +1822,106 @@ function NewOrder (props) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Stock Modal */}
+      {showStockModal && selectedStock && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '90%',
+            position: 'relative'
+          }}>
+            <button
+              onClick={closeStockModal}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.2rem'
+              }}
+            >
+              ×
+            </button>
+            
+            <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>
+              Stock Item Details
+            </h3>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
+                <div><strong>Item ID:</strong> {selectedStock.itemId || selectedStock._id}</div>
+                <div><strong>Item Name:</strong> {selectedStock.itemName}</div>
+                <div><strong>Cost Price:</strong> {formatCurrency(selectedStock.costPrice || 0)}</div>
+                <div><strong>Selling Price:</strong> {formatCurrency(selectedStock.sellingPrice || 0)}</div>
+                <div><strong>Current Stock:</strong> {selectedStock.currentStock || 0}</div>
+                <div><strong>Stock Value:</strong> {formatCurrency((selectedStock.costPrice || 0) * (selectedStock.currentStock || 0))}</div>
+                <div><strong>Projected Profit:</strong> {formatCurrency(((selectedStock.sellingPrice || 0) - (selectedStock.costPrice || 0)) * (selectedStock.currentStock || 0))}</div>
+                <div><strong>Last Updated:</strong> {selectedStock.updatedAt ? new Date(selectedStock.updatedAt).toLocaleDateString() : 'N/A'}</div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeStockModal}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Cancel
+              </button>
+              {user && user.username === 'testuser123' && (
+                <button
+                  onClick={handleDeleteStock}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#c82333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#dc3545';
+                  }}
+                >
+                  Delete Stock Item
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
