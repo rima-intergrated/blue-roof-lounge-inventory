@@ -717,11 +717,7 @@ function RegisterNewStaff({ staff = [], setStaff }) {
       {viewMode === 'create-position' && (
         <div className="staff-register-container">
           <div className="registration-options">          
-            <h2 className="my-profile-button" style={{ fontFamily: 'Arial, sans-serif' }}>Create New Position</h2>
-            <p style={{ fontSize: '14px', color: '#FF9800', marginTop: '10px', textAlign: 'center' }}>
-              ⚠️ Note: Due to backend schema limitations, newly created positions may not appear in the list. 
-              We are working on updating the backend to support full position data.
-            </p>          
+            <h2 className="my-profile-button" style={{ fontFamily: 'Arial, sans-serif' }}>Create New Position</h2>       
           </div>
 
           <input 
