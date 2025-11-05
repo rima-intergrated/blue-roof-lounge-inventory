@@ -2,15 +2,47 @@
 import { useState, useEffect, useRef } from "react";
 import { attachmentAPI, stockAPI, categoryAPI, expenseAPI, expenseCategoryAPI, salesAPI, creditSalesAPI, staffAPI, API_BASE_URL } from "../../services/api";
 import formatCurrency from '../../utils/formatCurrency';
+import { useAuth } from '../../context/AuthContext';
 
 function PosTransaction (props) {
+  // User authentication context
+  const { user } = useAuth();
+  
+  // State for cash sales modal
+  const [showCashSalesModal, setShowCashSalesModal] = useState(false);
+  const [selectedCashSale, setSelectedCashSale] = useState(null);
   // Helper to render filtered cash records and summary
   function renderFilteredCashRecords() {
     const isFiltered = !!(cashSalesFilterDate || cashSalesFilterItem || cashSalesFilterSignedBy);
     const filteredCashRecords = allCashRecords.filter(product => {
       // Date filter
       if (cashSalesFilterDate && product.dateSold) {
-        const prodDate = new Date(product.dateSold).toISOString().slice(0, 10);
+        // Normalize product date to YYYY-MM-DD format without timezone shifts
+        let prodDate;
+        if (typeof product.dateSold === 'string') {
+          // If it's already in YYYY-MM-DD format, use it directly
+          const match = product.dateSold.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) {
+            prodDate = match[0]; // YYYY-MM-DD
+          } else {
+            // Handle other string formats like MM/DD/YYYY or localized dates
+            const date = new Date(product.dateSold);
+            if (!isNaN(date)) {
+              // Use local date components to avoid timezone shifts
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              prodDate = `${year}-${month}-${day}`;
+            }
+          }
+        } else if (product.dateSold instanceof Date) {
+          // For Date objects, use local date components
+          const year = product.dateSold.getFullYear();
+          const month = String(product.dateSold.getMonth() + 1).padStart(2, '0');
+          const day = String(product.dateSold.getDate()).padStart(2, '0');
+          prodDate = `${year}-${month}-${day}`;
+        }
+        
         if (prodDate !== cashSalesFilterDate) return false;
       }
       // Item filter
@@ -33,7 +65,15 @@ function PosTransaction (props) {
 
     // Render filtered and paginated records
     const recordRows = paginatedRecords.map((product, index) => (
-      <div className="item-info" key={product.id || index}>
+      <div 
+        className="item-info" 
+        key={product.id || index}
+        onClick={() => {
+          setSelectedCashSale(product);
+          setShowCashSalesModal(true);
+        }}
+        style={{ cursor: 'pointer' }}
+      >
         <p className="item">{formatDate(product.dateSold)}</p>
         <p className="item" title={product.name}>{product.name}</p>
         <p className="item">
@@ -1589,6 +1629,47 @@ function PosTransaction (props) {
     setCurrentAttachment(null);
   }
 
+  // Cash sales modal functions
+  function closeCashSalesModal() {
+    setShowCashSalesModal(false);
+    setSelectedCashSale(null);
+  }
+
+  async function handleDeleteCashSale() {
+    if (!selectedCashSale || !user) return;
+
+    // Restrict delete to testuser123 only
+    if (user.username !== 'testuser123') {
+      alert('You do not have permission to delete cash sales records.');
+      return;
+    }
+
+    try {
+      const response = await salesAPI.delete(selectedCashSale._id || selectedCashSale.id);
+      if (response && response.success) {
+        // Remove from local state
+        setCashRecords(prev => prev.filter(record => 
+          (record._id || record.id) !== (selectedCashSale._id || selectedCashSale.id)
+        ));
+        setAllCashRecords(prev => prev.filter(record => 
+          (record._id || record.id) !== (selectedCashSale._id || selectedCashSale.id)
+        ));
+        
+        // Show success message
+        setPopupMessage('Cash sale deleted successfully');
+        setShowPopup(true);
+        setTimeout(() => { setShowPopup(false); setPopupMessage(''); }, 2000);
+        
+        closeCashSalesModal();
+      } else {
+        throw new Error(response?.message || 'Failed to delete cash sale');
+      }
+    } catch (error) {
+      console.error('❌ Failed to delete cash sale:', error);
+      alert('Failed to delete cash sale: ' + (error.message || error));
+    }
+  }
+
   // When modal opens with a currentAttachment, ensure the preview URL is an authenticated blob URL
   useEffect(() => {
     let cancelled = false;
@@ -2973,6 +3054,109 @@ function PosTransaction (props) {
                 </a>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Cash Sales Modal */}
+      {showCashSalesModal && selectedCashSale && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '90%',
+            position: 'relative'
+          }}>
+            <button
+              onClick={closeCashSalesModal}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.2rem'
+              }}
+            >
+              ×
+            </button>
+            
+            <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>
+              Cash Sale Details
+            </h3>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
+                <div><strong>Date:</strong> {formatDate(selectedCashSale.dateSold)}</div>
+                <div><strong>Item:</strong> {selectedCashSale.name}</div>
+                <div><strong>Payment Mode:</strong> {selectedCashSale.paymentMode}</div>
+                <div><strong>Quantity:</strong> {selectedCashSale.quantitySold}</div>
+                <div><strong>Unit Price:</strong> {formatCurrency(selectedCashSale.sellingPrice)}</div>
+                <div><strong>Total:</strong> {formatCurrency((selectedCashSale.sellingPrice || 0) * (selectedCashSale.quantitySold || 0))}</div>
+              </div>
+              {getSignedByDisplay(selectedCashSale) && (
+                <div style={{ marginTop: '1rem' }}>
+                  <strong>Signed By:</strong> {getSignedByDisplay(selectedCashSale)}
+                </div>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeCashSalesModal}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Cancel
+              </button>
+              {user && user.username === 'testuser123' && (
+                <button
+                  onClick={handleDeleteCashSale}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#c82333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#dc3545';
+                  }}
+                >
+                  Delete Sale
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

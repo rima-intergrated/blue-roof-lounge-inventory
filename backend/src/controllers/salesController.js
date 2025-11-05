@@ -804,11 +804,73 @@ const getDailySummaryReport = async (req, res) => {
   }
 };
 
+// @desc    Delete a sale
+// @route   DELETE /api/sales/:id
+// @access  Private
+const deleteSale = async (req, res) => {
+  try {
+    console.log('🗑️ DELETE /api/sales/:id called with ID:', req.params.id);
+
+    const sale = await Sale.findById(req.params.id);
+
+    if (!sale) {
+      console.log('❌ Sale not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Sale not found'
+      });
+    }
+
+    // Log the sale being deleted for audit purposes
+    console.log('📝 Deleting sale:', {
+      id: sale._id,
+      transactionId: sale.transactionId,
+      paymentMode: sale.paymentMode,
+      amount: sale.sellingPrice * sale.quantitySold,
+      deletedBy: req.user?.username || req.user?.email || 'Unknown'
+    });
+
+    // If it's a cash/mobile transfer sale, we should restore stock
+    if (sale.paymentMode === 'Cash' || sale.paymentMode === 'Mobile Transfer') {
+      try {
+        // Try to restore stock if the item still exists
+        if (sale.itemId) {
+          const stock = await Stock.findById(sale.itemId);
+          if (stock) {
+            stock.currentStock += sale.quantitySold;
+            await stock.save();
+            console.log(`📦 Restored ${sale.quantitySold} units to stock for item: ${stock.itemName}`);
+          }
+        }
+      } catch (stockError) {
+        console.log('⚠️ Warning: Could not restore stock:', stockError.message);
+        // Don't fail the deletion if stock restoration fails
+      }
+    }
+
+    await Sale.findByIdAndDelete(req.params.id);
+
+    console.log('✅ Sale deleted successfully');
+    res.json({
+      success: true,
+      message: 'Sale deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting sale:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   getAllSales,
   getSaleById,
   createSale,
   updateSale,
+  deleteSale,
   markAsPaid,
   getSalesStats,
   getOverdueSales,

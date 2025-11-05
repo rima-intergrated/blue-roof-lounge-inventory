@@ -5,6 +5,7 @@ const {
   getSaleById,
   createSale,
   updateSale,
+  deleteSale,
   markAsPaid,
   getSalesStats,
   getOverdueSales
@@ -29,5 +30,6 @@ router.get('/:id', [validateMongoId, checkPermission('sales', 'view')], getSaleB
 router.post('/', [validateSale, checkPermission('sales', 'add')], createSale);
 router.put('/:id', [validateMongoId, checkPermission('sales', 'edit')], updateSale);
 router.put('/:id/pay', [validateMongoId, checkPermission('sales', 'edit')], markAsPaid);
+router.delete('/:id', [validateMongoId, checkPermission('sales', 'delete')], deleteSale);
 
 module.exports = router;
