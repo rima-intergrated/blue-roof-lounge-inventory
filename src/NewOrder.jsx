@@ -1271,13 +1271,12 @@ function NewOrder (props) {
                     <div className="item-info" style={{ background: '#f8f9fa', fontWeight: 'bold', borderTop: '2px solid #e0e0e0' }}>
                       <p className="item">Total</p>
                       <p className="item">—</p>
-                      <p className="cost-price">{formatCurrency(totalCostPrice)}</p>
-                      <p className="selling-price">{formatCurrency(totalSellingPrice)}</p>
+                      <p className="cost-price">—</p>
+                      <p className="selling-price">—</p>
                       <p className="quantity-available">{totalStock}</p>
                       <p className="stock-value">{formatCurrency(totalStockValue)}</p>
                       <p className="stock-value">{formatCurrency(totalProjectedProfit)}</p>
-                      <p className="cost-price">{totalStock > 0 ? formatCurrency(totalCostPrice / totalStock) : formatCurrency(0)}</p>
-                      <p className="selling-price">{totalStock > 0 ? formatCurrency(totalSellingPrice / totalStock) : formatCurrency(0)}</p>
+                      <p className="stock-value">—</p>
                     </div>
 
                     {/* Pagination Controls (functional) */}
