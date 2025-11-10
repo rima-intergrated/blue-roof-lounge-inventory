@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { API_BASE_URL, stockAPI } from './services/api';
+import { API_BASE_URL, stockAPI, transactionAPI } from './services/api';
 import formatCurrency from "./utils/formatCurrency";
 import { useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -11,6 +11,14 @@ function NewOrder (props) {
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [clearQuantity, setClearQuantity] = useState('');
+  
+  // State for transaction history
+  const [transactionHistory, setTransactionHistory] = useState([]);
+  const [transactionHistoryPage, setTransactionHistoryPage] = useState(1);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [transactionSearchTerm, setTransactionSearchTerm] = useState('');
+  const [transactionDateFilter, setTransactionDateFilter] = useState('all');
   
   const location = useLocation();
   // Fetch all stocks for stocksheet on mount
@@ -62,6 +70,48 @@ function NewOrder (props) {
       }
     }
     fetchStocks();
+  }, []);
+
+  // Load transaction history from database on mount
+  useEffect(() => {
+    const loadTransactionHistory = async () => {
+      try {
+        console.log('🔄 Loading transaction history from database...');
+        const response = await transactionAPI.getAll({
+          limit: 100, // Load recent 100 transactions
+          sortBy: 'timestamp',
+          sortOrder: 'desc'
+        });
+        
+        if (response.success && response.data && response.data.transactions) {
+          console.log('✅ Loaded transactions from database:', response.data.transactions.length);
+          setTransactionHistory(response.data.transactions);
+        } else {
+          console.warn('❌ Failed to load transactions from database, falling back to localStorage');
+          throw new Error('Database load failed');
+        }
+      } catch (error) {
+        console.error('Error loading transaction history from database:', error);
+        console.log('🔄 Falling back to localStorage...');
+        // Fall back to localStorage
+        const savedHistory = localStorage.getItem('transactionHistory');
+        if (savedHistory) {
+          try {
+            const history = JSON.parse(savedHistory);
+            console.log('✅ Loaded transactions from localStorage:', history.length);
+            setTransactionHistory(history);
+          } catch (parseError) {
+            console.error('Error parsing localStorage transaction history:', parseError);
+            setTransactionHistory([]);
+          }
+        } else {
+          console.log('📝 No transaction history found');
+          setTransactionHistory([]);
+        }
+      }
+    };
+    
+    loadTransactionHistory();
   }, []);
 
   // If a focusItemId is provided via query param, try to prefill and page to it
@@ -687,6 +737,64 @@ function NewOrder (props) {
       }
     }
     await fetchAllStocksAfterSave();
+    
+    // Save transaction to database
+    try {
+      const transactionData = transactionAPI.formatForDatabase(itemOrdered, inventoryForm.dateOrdered);
+      const response = await transactionAPI.create(transactionData);
+      
+      if (response.success) {
+        console.log('Transaction saved to database:', response.data);
+        // Update local transaction history state from the saved data
+        const savedTransaction = response.data;
+        setTransactionHistory(prev => [savedTransaction, ...prev]);
+      } else {
+        console.error('Failed to save transaction:', response);
+        // Fall back to localStorage for this transaction
+        const localTransactionData = {
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+          items: itemOrdered.map(item => ({
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quantity: item.quantityOrdered,
+            unitPrice: item.costPrice,
+            totalPrice: item.costPrice * item.quantityOrdered,
+            supplier: item.supplierName || 'Direct Purchase'
+          })),
+          totalValue: itemOrdered.reduce((sum, item) => sum + (item.costPrice * item.quantityOrdered), 0),
+          totalItems: itemOrdered.reduce((sum, item) => sum + item.quantityOrdered, 0),
+          status: 'Completed'
+        };
+        
+        const updatedHistory = [localTransactionData, ...transactionHistory];
+        setTransactionHistory(updatedHistory);
+        localStorage.setItem('transactionHistory', JSON.stringify(updatedHistory));
+      }
+    } catch (error) {
+      console.error('Error saving transaction to database:', error);
+      // Fall back to localStorage
+      const localTransactionData = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        items: itemOrdered.map(item => ({
+          itemId: item.itemId,
+          itemName: item.itemName,
+          quantity: item.quantityOrdered,
+          unitPrice: item.costPrice,
+          totalPrice: item.costPrice * item.quantityOrdered,
+          supplier: item.supplierName || 'Direct Purchase'
+        })),
+        totalValue: itemOrdered.reduce((sum, item) => sum + (item.costPrice * item.quantityOrdered), 0),
+        totalItems: itemOrdered.reduce((sum, item) => sum + item.quantityOrdered, 0),
+        status: 'Completed'
+      };
+      
+      const updatedHistory = [localTransactionData, ...transactionHistory];
+      setTransactionHistory(updatedHistory);
+      localStorage.setItem('transactionHistory', JSON.stringify(updatedHistory));
+    }
+    
     setItemOrdered([]);
     setShowPopup(true);
     setTimeout(() => setShowPopup(false), 2000);
@@ -807,6 +915,9 @@ function NewOrder (props) {
           </div>
           <div>
             <button className="sales-btn" onClick={() => setViewMode('stock-sheet')}>View Stock-sheet</button>
+          </div>
+          <div>
+            <button className="sales-btn" onClick={() => setViewMode('transaction-history')}>Transaction History</button>
           </div>
           {/* <div>
             <button className="sales-btn" onClick={() => setViewMode('delivery-notes-receipts')}>Delivery Notes & Receipts</button>
@@ -1324,6 +1435,591 @@ function NewOrder (props) {
             </div>   
           </div>
 
+        </div>
+      )}
+
+      {/* Transaction History View Mode */}
+      {viewMode === 'transaction-history' && (
+        <div className="stocksheet-container">
+          <div className="stocksheet-title">
+            <h2>Transaction History</h2>
+            {user && user.username === 'testuser123' && transactionHistory.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => {
+                    // Export transaction history as CSV
+                    const headers = ['Transaction ID', 'Date & Time', 'Total Items', 'Total Value', 'Status', 'Item Details'];
+                    const rows = transactionHistory.map(transaction => [
+                      transaction.id,
+                      new Date(transaction.timestamp).toLocaleString(),
+                      transaction.totalItems || 0,
+                      transaction.totalValue || 0,
+                      transaction.status || 'Completed',
+                      transaction.items ? transaction.items.map(item => `${item.itemName} (${item.quantity})`).join('; ') : 'No items'
+                    ]);
+                    
+                    const csvContent = [headers, ...rows].map(row => 
+                      row.map(field => `"${field}"`).join(',')
+                    ).join('\n');
+                    
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `transaction-history-${new Date().toISOString().split('T')[0]}.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  Export CSV
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to clear all transaction history? This action cannot be undone.')) {
+                      try {
+                        // Get all transaction IDs from current history
+                        const transactionIds = transactionHistory
+                          .filter(t => t._id) // Only delete ones that exist in database
+                          .map(t => t._id);
+                        
+                        if (transactionIds.length > 0) {
+                          console.log('🗑️ Deleting', transactionIds.length, 'transactions from database...');
+                          await transactionAPI.deleteMultiple(transactionIds);
+                          console.log('✅ Database transactions cleared');
+                        }
+                        
+                        // Clear localStorage as fallback
+                        localStorage.removeItem('transactionHistory');
+                        console.log('✅ localStorage cleared');
+                        
+                        // Update UI
+                        setTransactionHistory([]);
+                        setTransactionHistoryPage(1);
+                      } catch (error) {
+                        console.error('❌ Error clearing transaction history:', error);
+                        alert('Failed to clear all transactions from database. Some data may remain.');
+                        // Still clear locally even if database fails
+                        setTransactionHistory([]);
+                        localStorage.removeItem('transactionHistory');
+                        setTransactionHistoryPage(1);
+                      }
+                    }
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  Clear All History
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="stocksheet-mini-container" style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Search and Filter Controls */}
+            {transactionHistory.length > 0 && (
+              <div style={{ 
+                marginBottom: '1.5rem', 
+                padding: '1.25rem', 
+                backgroundColor: '#ffffff', 
+                borderRadius: '8px',
+                border: '1px solid #dee2e6',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                width: '100%'
+              }}>
+                <h5 style={{ margin: '0 0 1rem 0', color: '#495057', fontSize: '1rem', fontWeight: '600' }}>
+                  Filter & Search Transactions
+                </h5>
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr',
+                  gap: '1.25rem',
+                  width: '100%'
+                }}>
+                  <div style={{ width: '100%' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '0.5rem', 
+                      fontSize: '0.9rem', 
+                      fontWeight: '500',
+                      color: '#495057'
+                    }}>
+                      Search Transactions
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionSearchTerm}
+                      onChange={(e) => setTransactionSearchTerm(e.target.value)}
+                      placeholder="Search by item name or transaction ID..."
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: '1px solid #ced4da',
+                        borderRadius: '6px',
+                        fontSize: '0.9rem',
+                        transition: 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#007bff';
+                        e.target.style.boxShadow = '0 0 0 0.2rem rgba(0, 123, 255, 0.25)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#ced4da';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                  <div style={{ width: '100%' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '0.5rem', 
+                      fontSize: '0.9rem', 
+                      fontWeight: '500',
+                      color: '#495057'
+                    }}>
+                      Date Filter
+                    </label>
+                    <select
+                      value={transactionDateFilter}
+                      onChange={(e) => setTransactionDateFilter(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        border: '1px solid #ced4da',
+                        borderRadius: '6px',
+                        fontSize: '0.9rem',
+                        backgroundColor: 'white',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#007bff';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#ced4da';
+                      }}
+                    >
+                      <option value="all">All Dates</option>
+                      <option value="today">Today</option>
+                      <option value="yesterday">Yesterday</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="stocksheet-information" style={{ width: '100%' }}>
+              <div className="stocksheet-items" style={{
+                display: 'grid',
+                gridTemplateColumns: '1.2fr 1.8fr 1fr 1.2fr 1fr 1fr',
+                gap: '0.5rem',
+                padding: '1rem 0.75rem',
+                backgroundColor: '#007bff',
+                color: 'white',
+                fontWeight: '600',
+                borderRadius: '8px 8px 0 0',
+                marginBottom: '0',
+                alignItems: 'center'
+              }}>
+                <h2 style={{ 
+                  margin: '0', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  color: 'white'
+                }}>Transaction ID</h2>
+                <h2 style={{ 
+                  margin: '0', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  color: 'white'
+                }}>Date & Time</h2>
+                <h2 style={{ 
+                  margin: '0', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  color: 'white'
+                }}>Total Items</h2>
+                <h2 style={{ 
+                  margin: '0', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  color: 'white'
+                }}>Total Value</h2>
+                <h2 style={{ 
+                  margin: '0', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  color: 'white'
+                }}>Status</h2>
+                <h2 style={{ 
+                  margin: '0', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  color: 'white'
+                }}>Actions</h2>
+              </div>
+
+              {(() => {
+                // Apply filters
+                let filteredTransactions = transactionHistory || [];
+                
+                // Apply search filter
+                if (transactionSearchTerm.trim()) {
+                  const searchLower = transactionSearchTerm.toLowerCase();
+                  filteredTransactions = filteredTransactions.filter(transaction => {
+                    // Search in transaction ID
+                    if (transaction.id && transaction.id.toString().toLowerCase().includes(searchLower)) {
+                      return true;
+                    }
+                    // Search in items
+                    if (transaction.items && transaction.items.some(item => 
+                      item.itemName && item.itemName.toLowerCase().includes(searchLower)
+                    )) {
+                      return true;
+                    }
+                    return false;
+                  });
+                }
+                
+                // Apply date filter
+                if (transactionDateFilter !== 'all') {
+                  const now = new Date();
+                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  const weekStart = new Date(today);
+                  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                  
+                  filteredTransactions = filteredTransactions.filter(transaction => {
+                    const transactionDate = new Date(transaction.timestamp);
+                    const transactionDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
+                    
+                    switch (transactionDateFilter) {
+                      case 'today':
+                        return transactionDay.getTime() === today.getTime();
+                      case 'yesterday':
+                        return transactionDay.getTime() === yesterday.getTime();
+                      case 'week':
+                        return transactionDate >= weekStart;
+                      case 'month':
+                        return transactionDate >= monthStart;
+                      default:
+                        return true;
+                    }
+                  });
+                }
+                
+                const source = filteredTransactions;
+                const perPage = 6;
+                const totalPages = Math.max(1, Math.ceil(source.length / perPage));
+                const currentPage = Math.max(1, Math.min(transactionHistoryPage, totalPages));
+                const paginatedTransactions = source.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+                if (source.length === 0) {
+                  if (transactionHistory.length === 0) {
+                    return (
+                      <div style={{
+                        padding: '3rem 2rem',
+                        textAlign: 'center',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '0 0 8px 8px',
+                        border: '1px solid #e9ecef',
+                        borderTop: 'none'
+                      }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: '0.3' }}>📊</div>
+                        <p style={{ 
+                          margin: '0',
+                          fontSize: '1.1rem',
+                          color: '#6c757d',
+                          fontWeight: '500'
+                        }}>No transactions recorded yet</p>
+                        <p style={{ 
+                          margin: '0.5rem 0 0 0',
+                          fontSize: '0.9rem',
+                          color: '#6c757d'
+                        }}>Start by creating and saving inventory orders</p>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div style={{
+                        padding: '3rem 2rem',
+                        textAlign: 'center',
+                        backgroundColor: '#fff3cd',
+                        borderRadius: '0 0 8px 8px',
+                        border: '1px solid #ffeaa7',
+                        borderTop: 'none'
+                      }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '1rem', opacity: '0.5' }}>🔍</div>
+                        <p style={{ 
+                          margin: '0',
+                          fontSize: '1.1rem',
+                          color: '#856404',
+                          fontWeight: '500'
+                        }}>No transactions match the current filters</p>
+                        <p style={{ 
+                          margin: '0.5rem 0 0 0',
+                          fontSize: '0.9rem',
+                          color: '#856404'
+                        }}>Try adjusting your search terms or date filter</p>
+                      </div>
+                    );
+                  }
+                }
+
+                // Calculate totals for the current page
+                const totalTransactionValue = paginatedTransactions.reduce((sum, transaction) => sum + (transaction.totalValue || 0), 0);
+                const totalTransactionItems = paginatedTransactions.reduce((sum, transaction) => sum + (transaction.totalItems || 0), 0);
+
+                return (
+                  <>
+                    {paginatedTransactions.map((transaction, index) => {
+                      const transactionId = transaction.id || `txn-${index}`;
+                      const formattedDate = new Date(transaction.timestamp).toLocaleString();
+                      
+                      return (
+                        <div 
+                          className="item-info" 
+                          key={transactionId}
+                          onClick={() => {
+                            setSelectedTransaction(transaction);
+                            setShowTransactionModal(true);
+                          }}
+                          style={{ 
+                            cursor: 'pointer',
+                            display: 'grid',
+                            gridTemplateColumns: '1.2fr 1.8fr 1fr 1.2fr 1fr 1fr',
+                            gap: '0.5rem',
+                            padding: '0.875rem 0.75rem',
+                            backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8f9fa',
+                            borderBottom: '1px solid #e9ecef',
+                            alignItems: 'center',
+                            transition: 'background-color 0.2s ease',
+                            fontSize: '0.85rem'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#e3f2fd';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                          }}
+                        >
+                          <p style={{ 
+                            margin: '0', 
+                            textAlign: 'center',
+                            fontWeight: '500',
+                            color: '#007bff'
+                          }}>#{transactionId}</p>
+                          <p style={{ 
+                            margin: '0', 
+                            textAlign: 'center',
+                            fontSize: '0.8rem'
+                          }}>{formattedDate}</p>
+                          <p style={{ 
+                            margin: '0', 
+                            textAlign: 'center',
+                            fontWeight: '500'
+                          }}>{transaction.totalItems || 0}</p>
+                          <p style={{ 
+                            margin: '0', 
+                            textAlign: 'center',
+                            fontWeight: '600',
+                            color: '#28a745'
+                          }}>{formatCurrency(transaction.totalValue || 0)}</p>
+                          <p style={{ 
+                            margin: '0', 
+                            textAlign: 'center'
+                          }}>
+                            <span style={{
+                              padding: '0.25rem 0.5rem',
+                              backgroundColor: '#d4edda',
+                              color: '#155724',
+                              borderRadius: '12px',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
+                            }}>
+                              {transaction.status || 'Completed'}
+                            </span>
+                          </p>
+                          <p style={{ 
+                            margin: '0', 
+                            textAlign: 'center'
+                          }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTransaction(transaction);
+                                setShowTransactionModal(true);
+                              }}
+                              style={{
+                                padding: '0.375rem 0.75rem',
+                                fontSize: '0.75rem',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                transition: 'background-color 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#0056b3';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = '#007bff';
+                              }}
+                            >
+                              View Details
+                            </button>
+                          </p>
+                        </div>
+                      );
+                    })}
+
+                    {/* Total row for current page */}
+                    <div style={{ 
+                      display: 'grid',
+                      gridTemplateColumns: '1.2fr 1.8fr 1fr 1.2fr 1fr 1fr',
+                      gap: '0.5rem',
+                      padding: '1rem 0.75rem',
+                      backgroundColor: '#f8f9fa', 
+                      fontWeight: 'bold', 
+                      borderTop: '2px solid #007bff',
+                      borderRadius: '0 0 8px 8px',
+                      alignItems: 'center',
+                      fontSize: '0.9rem'
+                    }}>
+                      <p style={{ margin: '0', textAlign: 'center', fontWeight: '600' }}>Page Total</p>
+                      <p style={{ margin: '0', textAlign: 'center', color: '#6c757d' }}>—</p>
+                      <p style={{ margin: '0', textAlign: 'center', fontWeight: '600', color: '#fd7e14' }}>
+                        {totalTransactionItems}
+                      </p>
+                      <p style={{ margin: '0', textAlign: 'center', fontWeight: '600', color: '#28a745' }}>
+                        {formatCurrency(totalTransactionValue)}
+                      </p>
+                      <p style={{ margin: '0', textAlign: 'center', color: '#6c757d' }}>—</p>
+                      <p style={{ margin: '0', textAlign: 'center', color: '#6c757d' }}>—</p>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div style={{ 
+                        padding: '1.5rem', 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        gap: '0.75rem',
+                        backgroundColor: '#ffffff',
+                        borderTop: '1px solid #e9ecef',
+                        borderRadius: '0 0 8px 8px'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setTransactionHistoryPage(prev => Math.max(1, prev - 1));
+                          }}
+                          disabled={currentPage === 1}
+                          style={{ 
+                            padding: '0.5rem 1rem', 
+                            backgroundColor: currentPage === 1 ? '#e9ecef' : '#007bff', 
+                            color: currentPage === 1 ? '#6c757d' : 'white', 
+                            border: 'none', 
+                            borderRadius: '6px', 
+                            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.9rem',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentPage !== 1) {
+                              e.target.style.backgroundColor = '#0056b3';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentPage !== 1) {
+                              e.target.style.backgroundColor = '#007bff';
+                            }
+                          }}
+                        >
+                          ← Previous
+                        </button>
+
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: '#495057',
+                          fontSize: '0.9rem',
+                          padding: '0.5rem 1rem',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '6px',
+                          border: '1px solid #dee2e6'
+                        }}>
+                          Page {currentPage} of {totalPages}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setTransactionHistoryPage(prev => Math.min(totalPages, prev + 1));
+                          }}
+                          disabled={currentPage === totalPages}
+                          style={{ 
+                            padding: '0.5rem 1rem', 
+                            backgroundColor: currentPage === totalPages ? '#e9ecef' : '#007bff', 
+                            color: currentPage === totalPages ? '#6c757d' : 'white', 
+                            border: 'none', 
+                            borderRadius: '6px', 
+                            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.9rem',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentPage !== totalPages) {
+                              e.target.style.backgroundColor = '#0056b3';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentPage !== totalPages) {
+                              e.target.style.backgroundColor = '#007bff';
+                            }
+                          }}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1856,6 +2552,201 @@ function NewOrder (props) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {showTransactionModal && selectedTransaction && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '12px',
+            maxWidth: '700px',
+            width: '90%',
+            maxHeight: '90%',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => {
+                setShowTransactionModal(false);
+                setSelectedTransaction(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.2rem'
+              }}
+            >
+              ×
+            </button>
+            
+            <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>
+              Transaction #{selectedTransaction.id} Details
+            </h3>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                <div><strong>Transaction ID:</strong> #{selectedTransaction.id}</div>
+                <div><strong>Date & Time:</strong> {new Date(selectedTransaction.timestamp).toLocaleString()}</div>
+                <div><strong>Status:</strong> {selectedTransaction.status}</div>
+                <div><strong>Total Value:</strong> {formatCurrency(selectedTransaction.totalValue || 0)}</div>
+                <div><strong>Total Items:</strong> {selectedTransaction.totalItems || 0}</div>
+                <div><strong>Item Count:</strong> {selectedTransaction.items ? selectedTransaction.items.length : 0}</div>
+              </div>
+              
+              <h4 style={{ marginBottom: '1rem', color: '#333', borderBottom: '2px solid #007bff', paddingBottom: '0.5rem' }}>
+                Items in this Transaction
+              </h4>
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '2fr 1fr 1fr 1fr 2fr', 
+                gap: '0.5rem', 
+                backgroundColor: '#f8f9fa', 
+                padding: '0.75rem',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+                marginBottom: '0.5rem'
+              }}>
+                <div>Item Name</div>
+                <div>Quantity</div>
+                <div>Unit Price</div>
+                <div>Total</div>
+                <div>Supplier</div>
+              </div>
+              
+              {selectedTransaction.items && selectedTransaction.items.map((item, index) => (
+                <div key={index} style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '2fr 1fr 1fr 1fr 2fr', 
+                  gap: '0.5rem', 
+                  padding: '0.75rem',
+                  borderBottom: '1px solid #e9ecef',
+                  fontSize: '0.85rem'
+                }}>
+                  <div>{item.itemName}</div>
+                  <div>{item.quantity}</div>
+                  <div>{formatCurrency(item.unitPrice || 0)}</div>
+                  <div>{formatCurrency(item.totalPrice || 0)}</div>
+                  <div>{item.supplier || 'N/A'}</div>
+                </div>
+              ))}
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '2fr 1fr 1fr 1fr 2fr', 
+                gap: '0.5rem', 
+                backgroundColor: '#f8f9fa', 
+                padding: '0.75rem',
+                borderRadius: '6px',
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                marginTop: '0.5rem'
+              }}>
+                <div>Total</div>
+                <div>{selectedTransaction.items ? selectedTransaction.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) : 0}</div>
+                <div>—</div>
+                <div>{formatCurrency(selectedTransaction.totalValue || 0)}</div>
+                <div>—</div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowTransactionModal(false);
+                  setSelectedTransaction(null);
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Close
+              </button>
+              {user && user.username === 'testuser123' && (
+                <button
+                  onClick={async () => {
+                    if (confirm(`Are you sure you want to delete transaction #${selectedTransaction.transactionId || selectedTransaction.id}?`)) {
+                      try {
+                        // Try to delete from database first (if it has a database _id)
+                        if (selectedTransaction._id) {
+                          console.log('🗑️ Deleting transaction from database:', selectedTransaction._id);
+                          await transactionAPI.delete(selectedTransaction._id);
+                          console.log('✅ Transaction deleted from database');
+                        }
+                        
+                        // Update local state
+                        const updatedHistory = transactionHistory.filter(t => 
+                          (t._id && t._id !== selectedTransaction._id) || 
+                          (t.id && t.id !== selectedTransaction.id)
+                        );
+                        setTransactionHistory(updatedHistory);
+                        
+                        // Update localStorage fallback
+                        const localOnlyTransactions = updatedHistory.filter(t => !t._id);
+                        if (localOnlyTransactions.length > 0) {
+                          localStorage.setItem('transactionHistory', JSON.stringify(localOnlyTransactions));
+                        } else {
+                          localStorage.removeItem('transactionHistory');
+                        }
+                        
+                        setShowTransactionModal(false);
+                        setSelectedTransaction(null);
+                      } catch (error) {
+                        console.error('❌ Error deleting transaction:', error);
+                        alert('Failed to delete transaction from database. It may still appear in the list.');
+                      }
+                    }
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#c82333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#dc3545';
+                  }}
+                >
+                  Delete Transaction
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

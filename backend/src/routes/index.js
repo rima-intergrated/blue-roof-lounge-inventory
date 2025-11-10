@@ -17,6 +17,7 @@ const passwordSetupRoutes = require('./passwordSetup');
 const itemRoutes = require('./items');
 const testRoutes = require('./test');
 const stockRoutes = require('./stock');
+const transactionRoutes = require('./transactions');
 
 // API health check
 router.get('/health', (req, res) => {
@@ -44,6 +45,7 @@ router.use('/delivery-notes-receipts', deliveryNotesReceiptsRoutes);
 router.use('/items', itemRoutes);
 router.use('/test', testRoutes);
 router.use('/stock', stockRoutes);
+router.use('/transactions', transactionRoutes);
 
 // Handle 404 for API routes
 router.use('*', (req, res) => {

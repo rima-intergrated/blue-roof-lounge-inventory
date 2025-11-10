@@ -711,6 +711,108 @@ export const deliveryNotesReceiptsAPI = {
   },
 };
 
+// Transaction API
+export const transactionAPI = {
+  // Get all transactions with pagination and filtering
+  getAll: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    // Add pagination parameters
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    
+    // Add filtering parameters
+    if (params.search) queryParams.append('search', params.search);
+    if (params.type) queryParams.append('type', params.type);
+    if (params.status) queryParams.append('status', params.status);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+    
+    // Add sorting parameters
+    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/transactions?${queryString}` : '/transactions';
+    
+    return apiRequest(endpoint);
+  },
+
+  // Get single transaction by ID
+  getById: async (id) => {
+    return apiRequest(`/transactions/${id}`);
+  },
+
+  // Create new transaction
+  create: async (transactionData) => {
+    return apiRequest('/transactions', {
+      method: 'POST',
+      body: JSON.stringify(transactionData),
+    });
+  },
+
+  // Update transaction
+  update: async (id, updates) => {
+    return apiRequest(`/transactions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete single transaction
+  delete: async (id) => {
+    return apiRequest(`/transactions/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Delete multiple transactions
+  deleteMultiple: async (ids) => {
+    return apiRequest('/transactions/bulk', {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    });
+  },
+
+  // Get transaction statistics
+  getStats: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/transactions/stats?${queryString}` : '/transactions/stats';
+    
+    return apiRequest(endpoint);
+  },
+
+  // Helper method to format transaction data for database storage
+  formatForDatabase: (orderItems, dateOrdered = null) => {
+    const items = orderItems.map(item => ({
+      itemName: item.itemName,
+      itemId: item.itemId || undefined,
+      quantity: Number(item.quantityOrdered),
+      unitPrice: Number(item.costPrice),
+      totalPrice: Number(item.costPrice) * Number(item.quantityOrdered),
+      supplier: item.supplierName || undefined,
+      sellingPrice: Number(item.sellingPrice) || undefined
+    }));
+
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalValue = items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+    return {
+      type: 'inventory_add',
+      status: 'completed',
+      items,
+      totalItems,
+      totalValue,
+      dateOrdered: dateOrdered ? new Date(dateOrdered) : undefined,
+      notes: `Inventory order with ${totalItems} items totaling ${totalValue}`
+    };
+  }
+};
+
 // Health check
 export const healthCheck = async () => {
   return apiRequest('/health');
@@ -729,5 +831,6 @@ export default {
   categoryAPI,
   expenseCategoryAPI,
   deliveryNotesReceiptsAPI,
+  transactionAPI,
   healthCheck
 };
