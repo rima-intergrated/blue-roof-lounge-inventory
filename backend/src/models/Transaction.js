@@ -44,8 +44,13 @@ const transactionSchema = new mongoose.Schema({
   transactionId: {
     type: String,
     unique: true,
-    required: true,
-    index: true
+    required: false, // Changed to false to prevent validation errors
+    index: true,
+    default: function() {
+      const timestamp = Date.now().toString();
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      return `TXN-${timestamp}-${random}`;
+    }
   },
   type: {
     type: String,
@@ -62,13 +67,15 @@ const transactionSchema = new mongoose.Schema({
   items: [transactionItemSchema],
   totalItems: {
     type: Number,
-    required: true,
-    min: [0, 'Total items cannot be negative']
+    required: false, // Changed to false to prevent validation errors
+    min: [0, 'Total items cannot be negative'],
+    default: 0
   },
   totalValue: {
     type: Number,
-    required: true,
-    min: [0, 'Total value cannot be negative']
+    required: false, // Changed to false to prevent validation errors
+    min: [0, 'Total value cannot be negative'],
+    default: 0
   },
   timestamp: {
     type: Date,
@@ -110,18 +117,39 @@ const transactionSchema = new mongoose.Schema({
 
 // Pre-save middleware to generate transaction ID and calculate totals
 transactionSchema.pre('save', function(next) {
-  // Generate transaction ID if not provided
-  if (!this.transactionId) {
+  console.log('🔍 Transaction pre-save middleware triggered');
+  console.log('📊 Current transaction data:', this.toObject());
+  
+  // Always ensure we have a transaction ID
+  if (!this.transactionId || this.transactionId === undefined || this.transactionId === null) {
     const timestamp = Date.now().toString();
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     this.transactionId = `TXN-${timestamp}-${random}`;
+    console.log('🆔 Generated transaction ID:', this.transactionId);
   }
   
-  // Calculate totals from items
-  if (this.items && this.items.length > 0) {
-    this.totalItems = this.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    this.totalValue = this.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+  // Always recalculate totals from items to ensure accuracy
+  if (this.items && Array.isArray(this.items) && this.items.length > 0) {
+    this.totalItems = this.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    this.totalValue = this.items.reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0);
+    console.log('📈 Calculated totals from items - Items:', this.totalItems, 'Value:', this.totalValue);
+  } else {
+    // Set defaults if no items
+    this.totalItems = this.totalItems || 0;
+    this.totalValue = this.totalValue || 0;
+    console.log('⚠️ No items or using existing totals - Items:', this.totalItems, 'Value:', this.totalValue);
   }
+  
+  // Ensure these fields are never undefined
+  this.totalItems = this.totalItems !== undefined ? this.totalItems : 0;
+  this.totalValue = this.totalValue !== undefined ? this.totalValue : 0;
+  
+  console.log('✅ Final transaction data before save:', {
+    transactionId: this.transactionId,
+    totalItems: this.totalItems,
+    totalValue: this.totalValue,
+    itemsCount: this.items ? this.items.length : 0
+  });
   
   next();
 });

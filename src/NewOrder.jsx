@@ -741,6 +741,7 @@ function NewOrder (props) {
     // Save transaction to database
     try {
       const transactionData = transactionAPI.formatForDatabase(itemOrdered, inventoryForm.dateOrdered);
+      console.log('📤 Sending transaction data to database:', transactionData);
       const response = await transactionAPI.create(transactionData);
       
       if (response.success) {

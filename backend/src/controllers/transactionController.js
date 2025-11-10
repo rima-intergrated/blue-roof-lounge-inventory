@@ -146,8 +146,39 @@ const createTransaction = async (req, res) => {
       dateOrdered,
       notes,
       stockIds = [],
-      attachments = []
+      attachments = [],
+      totalItems,
+      totalValue
     } = req.body;
+
+    console.log('📥 Received transaction request body:', req.body);
+
+    // Validate and ensure items array is properly structured
+    if (!Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Items must be an array'
+      });
+    }
+
+    // Ensure each item has required fields
+    const validatedItems = items.map(item => ({
+      itemName: item.itemName || 'Unknown Item',
+      itemId: item.itemId || undefined,
+      quantity: Number(item.quantity) || 1,
+      unitPrice: Number(item.unitPrice) || 0,
+      totalPrice: Number(item.totalPrice) || (Number(item.unitPrice) || 0) * (Number(item.quantity) || 1),
+      supplier: item.supplier || undefined,
+      sellingPrice: Number(item.sellingPrice) || undefined
+    }));
+
+    console.log('✅ Validated items:', validatedItems);
+
+    // Calculate totals from validated items
+    const calculatedTotalItems = validatedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const calculatedTotalValue = validatedItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    
+    console.log('🧮 Final calculated totals - Items:', calculatedTotalItems, 'Value:', calculatedTotalValue);
 
     // Add user information if authenticated
     let userId = null;
@@ -157,18 +188,23 @@ const createTransaction = async (req, res) => {
       username = req.user.username;
     }
 
-    // Create transaction
-    const transaction = new Transaction({
+    // Create transaction with validated data
+    const transactionData = {
       type,
       status,
-      items,
+      items: validatedItems,
+      totalItems: calculatedTotalItems,
+      totalValue: calculatedTotalValue,
       dateOrdered: dateOrdered ? new Date(dateOrdered) : undefined,
       notes,
       userId,
       username,
       stockIds,
       attachments
-    });
+    };
+
+    console.log('💾 Creating transaction with data:', transactionData);
+    const transaction = new Transaction(transactionData);
 
     await transaction.save();
 
